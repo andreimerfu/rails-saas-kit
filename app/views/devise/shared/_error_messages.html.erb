@@ -1,0 +1,15 @@
+<% if resource.errors.any? %>
+  <%= render UI::AlertComponent.new(level: :error, data: { turbo_cache: :false }) do |alert| %>
+    <% alert.with_title do %>
+      <%= I18n.t("errors.messages.not_saved",
+                 count: resource.errors.count,
+                 resource: resource.class.model_name.human.downcase)
+       %>
+    <% end %>
+    <ul class="list-disc list-inside">
+      <% resource.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  <% end %>
+<% end %>

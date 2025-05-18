@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full scrollbar-rounded" data-theme="<%= current_theme || 'corporate' %>">
+  <head>
+    <%= render "layouts/head" %>
+    <%# Specific title for onboarding if needed, otherwise it will use the default from _head.html.erb %>
+    <title>Onboarding - YourApp</title>
+  </head>
+  <body class="flex flex-col min-h-screen bg-base-200">
+    <%= render "layouts/minimal_header" %>
+
+    <main class="flex-grow flex items-center justify-center p-4 sm:p-6 lg:p-8">
+      <div class="w-full max-w-2xl"> <%# max-w-2xl as per original onboarding layout %>
+        <div class="bg-base-100 p-6 sm:p-8 rounded-box shadow-xl border border-base-300">
+          <%= yield %>
+        </div>
+      </div>
+    </main>
+
+    <%= render "layouts/minimal_footer" %>
+    <%= render "layouts/analytics" %>
+  </body>
+</html>

@@ -1,0 +1,112 @@
+<div class="space-y-6">
+  <!-- Welcome Section -->
+  <%= render UI::AlertComponent.new(kind: :info, class: "shadow-md", data: { controller: "dismissable" }) do %>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full">
+      <div>
+        <h3 class="font-bold">Welcome back, <%= current_user.name %>!</h3>
+        <div class="text-xs"><%= @organization&.name %></div>
+      </div>
+      <div class="mt-2 sm:mt-0">
+        <%= render UI::ButtonComponent.new(label: "Dismiss", style: :ghost, size: :sm, data: { action: "click->dismissable#dismiss" }) %>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Quick Stats -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <%= render UI::CardComponent.new(class: "bg-base-100 shadow-xl hover:shadow-2xl transition-shadow") do |card| %>
+      <% card.with_body do %>
+        <div class="stat">
+          <div class="stat-figure text-primary">
+            <%= icon :users, class: "w-8 h-8" %>
+          </div>
+          <div class="stat-title">Team Members</div>
+          <div class="stat-value text-primary">12</div>
+          <div class="stat-desc">↗︎ 2 new this month</div>
+        </div>
+      <% end %>
+    <% end %>
+
+    <%= render UI::CardComponent.new(class: "bg-base-100 shadow-xl hover:shadow-2xl transition-shadow") do |card| %>
+      <% card.with_body do %>
+        <div class="stat">
+          <div class="stat-figure text-secondary">
+            <%= icon :folder, class: "w-8 h-8" %>
+          </div>
+          <div class="stat-title">Projects</div>
+          <div class="stat-value text-secondary">24</div>
+          <div class="stat-desc">↗︎ 3 active projects</div>
+        </div>
+      <% end %>
+    <% end %>
+
+    <%= render UI::CardComponent.new(class: "bg-base-100 shadow-xl hover:shadow-2xl transition-shadow") do |card| %>
+      <% card.with_body do %>
+        <div class="stat">
+          <div class="stat-figure text-accent">
+            <%= icon :chart_bar, class: "w-8 h-8" %>
+          </div>
+          <div class="stat-title">Tasks</div>
+          <div class="stat-value text-accent">89%</div>
+          <div class="stat-desc">↗︎ Completion rate</div>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+
+  <!-- Sample Chart -->
+  <%= render UI::CardComponent.new(title: "Sample Data Chart") do |card| %>
+    <% card.with_body do %>
+      <%= bar_chart({
+            "January" => 10,
+            "February" => 15,
+            "March" => 8,
+            "April" => 22,
+            "May" => 18
+          },
+          title: "Monthly Activity",
+          responsive: true
+          # Example for theme: theme: current_user.theme_preference == "dark" ? "dark" : nil
+          # Responsive by default, removed fixed height: "300px"
+    ) %>
+  <% end %>
+<% end %>
+
+<!-- Recent Activity -->
+<%= render UI::CardComponent.new(title: "Recent Activity") do |card| %>
+  <% card.with_body do %> <%# Removed class: "p-0" to prevent ArgumentError %>
+    <div class="overflow-x-auto">
+      <table class="table table-zebra"> <%# Removed table-pin-rows as it might conflict with card structure, can be re-added if layout allows %>
+        <thead>
+            <tr>
+              <th>Type</th>
+              <th>Description</th>
+              <th>Date</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Project</td>
+              <td>Website Redesign</td>
+              <td>2 days ago</td>
+              <td><span class="badge badge-success">Completed</span></td>
+            </tr>
+            <tr>
+              <td>Task</td>
+              <td>Update Documentation</td>
+              <td>3 days ago</td>
+              <td><span class="badge badge-warning">In Progress</span></td>
+            </tr>
+            <tr>
+              <td>Meeting</td>
+              <td>Team Sync</td>
+              <td>5 days ago</td>
+              <td><span class="badge badge-info">Scheduled</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    <% end %>
+  <% end %>
+</div>

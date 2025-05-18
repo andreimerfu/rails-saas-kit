@@ -1,0 +1,23 @@
+<%# Locals: notification (Noticed::Notification) %>
+<div id="<%= dom_id(notification) %>" class="p-3 hover:bg-base-200 <%= 'bg-base-300' unless notification.read? %>">
+  <%= link_to notification.url || '#', class: "flex items-start space-x-3" do %>
+    <% if notification.try(:icon).present? %>
+      <span class="text-accent">
+        <%= icon notification.icon, class: "h-5 w-5" %>
+      </span>
+    <% else %>
+      <span class="text-info">
+        <%= icon "information-circle", class: "h-5 w-5" %>
+      </span>
+    <% end %>
+    <div class="flex-1">
+      <p class="text-sm"><%= notification.message %></p>
+      <p class="text-xs text-opacity-70">
+        <%= time_ago_in_words(notification.created_at) %> ago
+      </p>
+    </div>
+  <% end %>
+  <% unless notification.read? %>
+    <%= button_to "Mark as read", mark_as_read_notification_path(notification), method: :patch, class: "btn btn-xs btn-ghost mt-1", form_class: "inline-block" %>
+  <% end %>
+</div>

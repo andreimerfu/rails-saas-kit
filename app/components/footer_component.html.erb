@@ -1,0 +1,17 @@
+<div class="bg-base-200 border-t border-base-300"> <%# Simplified wrapper %>
+  <footer class="container mx-auto px-6 py-4 text-sm flex flex-col sm:flex-row justify-between items-center gap-2">
+    <aside class="flex items-center gap-2">
+      <%# You can use a smaller, simpler logo or just text %>
+      <%# <%= icon :cube_transparent, class: 'h-5 w-5' %>
+      <div>
+        <p class="text-base-content/80">&copy; <%= Time.current.year %> <%= @company_name || "Your Company" %>. All rights reserved.</p>
+      </div>
+    </aside>
+    
+    <nav class="flex gap-4">
+      <%# Keep essential links if needed, or remove for a cleaner in-app footer %>
+      <a href="#" class="link link-hover text-base-content/70">Terms</a>
+      <a href="#" class="link link-hover text-base-content/70">Privacy</a>
+    </nav>
+  </footer>
+</div>

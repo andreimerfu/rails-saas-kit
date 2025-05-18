@@ -1,0 +1,2 @@
+class EnterpriseOauthSetting < ApplicationRecord
+end

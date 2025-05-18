@@ -1,0 +1,67 @@
+<div class="drawer-side z-40">
+  <label for="sidebar-drawer" class="drawer-overlay"></label>
+  <aside class="menu min-h-screen w-64 bg-base-200 text-base-content p-4"> <%# Increased width and added padding %>
+    <!-- App Logo -->
+    <div class="sticky top-0 z-20 bg-base-200/95 backdrop-blur -mx-4 px-4 pt-3 pb-2"> <%# Adjusted padding for sticky header %>
+      <div class="flex items-center gap-2">
+        <%# Simplified Logo - Replace with your actual SVG logo component or image tag %>
+        <a href="<%= authenticated_root_path %>" class="flex items-center gap-2">
+          <svg width="32" height="32" viewBox="0 0 415 415" xmlns="http://www.w3.org/2000/svg" class="flex-none text-primary">
+            <rect x="82.5" y="290" width="250" height="125" rx="62.5" fill="currentColor"></rect>
+            <circle cx="207.5" cy="135" r="130" fill="currentColor" fill-opacity=".3"></circle>
+            <circle cx="207.5" cy="135" r="125" fill="oklch(var(--b1))"></circle> <%# Use base-100 for inner circle %>
+            <circle cx="207.5" cy="135" r="56" fill="currentColor"></circle>
+          </svg>
+          <span class="font-bold text-lg">YourApp</span> <%# Replace YourApp %>
+        </a>
+        <label for="sidebar-drawer" class="btn btn-circle btn-ghost lg:hidden ml-auto"> <%# Moved toggle to the right %>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="w-6 h-6 stroke-current">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </label>
+      </div>
+      <div class="divider mt-2 mb-0"></div>
+    </div>
+
+    <!-- Navigation Menu -->
+    <div class="pt-2 pb-4">
+      <!-- Main Navigation -->
+      <div class="mb-4"> <%# Increased margin-bottom %>
+        <ul class="menu gap-1 w-full"> <%# Removed menu-compact, increased gap %>
+          <li class="menu-title px-2 pt-2 pb-1"> <%# Adjusted padding %>
+            <span class="text-sm font-semibold text-base-content/60 tracking-wide">Main</span>
+          </li>
+          <% navigation_items[:main].each do |item| %>
+            <li>
+              <%= link_to item[:path],
+                  class: "flex items-center gap-3 px-2 py-2 rounded-lg #{active_link?(item[:path]) ? 'active bg-primary text-primary-content font-semibold' : 'hover:bg-base-300/50'}" do %>
+                <%= icon item[:icon], class: "w-5 h-5 flex-shrink-0 opacity-70" %>
+                <span class="text-base"><%= item[:label] %></span>
+              <% end %>
+            </li>
+          <% end %>
+        </ul>
+      </div>
+
+      <!-- Workspace Navigation -->
+      <div>
+        <ul class="menu gap-1 w-full"> <%# Removed menu-compact, increased gap %>
+          <li class="menu-title px-2 pt-2 pb-1"> <%# Adjusted padding %>
+            <span class="text-sm font-semibold text-base-content/60 tracking-wide">Workspace</span>
+          </li>
+          <% navigation_items[:workspace].each do |item| %>
+            <li>
+              <%= link_to item[:path],
+                  class: "flex items-center gap-3 px-2 py-2 rounded-lg #{active_link?(item[:path]) ? 'active bg-primary text-primary-content font-semibold' : 'hover:bg-base-300/50'}" do %>
+                <%= icon item[:icon], class: "w-5 h-5 flex-shrink-0 opacity-70" %>
+                <span class="text-base"><%= item[:label] %></span>
+              <% end %>
+            </li>
+          <% end %>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Bottom Section Removed as per Rework Plan (functionality consolidated in Navbar) -->
+  </aside>
+</div>

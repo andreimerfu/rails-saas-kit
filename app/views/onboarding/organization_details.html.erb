@@ -1,0 +1,36 @@
+<%= render 'stepper' %>
+
+<div class="max-w-lg mx-auto mt-8">
+  <%= render UI::CardComponent.new(title: "Create Your Organization", class: "shadow-xl") do |card| %>
+    <% card.with_body do %>
+      <p class="text-center text-base-content/70 mb-6">Tell us a bit about your new organization.</p> <%# Moved subtitle here %>
+
+      <%= simple_form_for(@organization || Organization.new, url: wizard_path, method: :put, html: { class: "space-y-4" }) do |f| %>
+        <%= f.error_notification %>
+        <%= render "devise/shared/error_messages", resource: f.object %>
+
+        <%= f.input :name,
+                    label: "Organization Name",
+                    required: true,
+                    autofocus: true,
+                    placeholder: "e.g. Acme Inc, Marketing Team",
+                    input_html: { class: "input input-bordered w-full", autocomplete: "organization" },
+                    hint: "This will be your team's workspace name." %>
+        
+        <%# Add other organization fields here if needed in the future, e.g.: %>
+        <%#= f.input :website, label: "Website (Optional)", placeholder: "https://example.com", input_html: { class: "input input-bordered w-full" } %>
+        <%#= f.input :industry, label: "Industry (Optional)", placeholder: "e.g. Technology, Healthcare", input_html: { class: "input input-bordered w-full" } %>
+
+        <div class="card-actions justify-between items-center pt-4">
+          <%= link_to previous_wizard_path, class: "btn btn-ghost" do %>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 mr-1">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+            </svg>
+            Back
+          <% end %>
+          <%= f.button :submit, "Create Organization & Continue", class: "btn btn-primary" %>
+        </div>
+      <% end %>
+    <% end %>
+  <% end %>
+</div>

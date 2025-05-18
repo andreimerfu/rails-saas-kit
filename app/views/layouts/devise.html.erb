@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full scrollbar-rounded" data-theme="<%= current_theme || 'corporate' %>">
+  <head>
+    <%= render "layouts/head" %>
+  </head>
+  <body class="flex flex-col min-h-screen bg-base-200">
+    <%= render "layouts/minimal_header" %>
+
+    <main class="flex-grow flex items-center justify-center p-4 sm:p-6 lg:p-8">
+      <div class="w-full max-w-md">
+        <%# The logo/app name from the old layout can be placed inside the card if desired, or rely on the minimal_header %>
+        <%# Example:
+        <div class="flex justify-center mb-6">
+          <a href="/" aria-current="page" aria-label="Homepage" class="flex items-center gap-2">
+            <svg class="w-10 h-10" viewBox="0 0 415 415" xmlns="http://www.w3.org/2000/svg">
+              <rect x="82.5" y="290" width="250" height="125" rx="62.5" fill="#1AD1A5"/>
+              <circle cx="207.5" cy="135" r="130" fill="black" fill-opacity=".3"/>
+              <circle cx="207.5" cy="135" r="125" fill="white"/>
+              <circle cx="207.5" cy="135" r="56" fill="#FF9903"/>
+            </svg>
+            <div class="font-title text-2xl font-bold">
+              <span class="text-primary">Rails</span>
+              <span class="text-base-content">DaisyUI</span>
+            </div>
+          </a>
+        </div>
+        %>
+        <div class="bg-base-100 p-6 sm:p-8 rounded-box shadow-xl border border-base-300">
+          <%= yield %>
+        </div>
+      </div>
+    </main>
+
+    <%= render "layouts/minimal_footer" %>
+    <%= render "layouts/analytics" %>
+  </body>
+</html>

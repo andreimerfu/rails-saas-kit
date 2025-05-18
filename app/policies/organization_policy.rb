@@ -1,0 +1,54 @@
+class OrganizationPolicy < ApplicationPolicy
+  def index?
+    user.admin?
+  end
+
+  def show?
+    user.admin?
+  end
+
+  def create?
+    user.admin?
+  end
+
+  def new?
+    create?
+  end
+
+  def update?
+    user.admin?
+  end
+
+  def edit?
+    update?
+  end
+
+  def destroy?
+    user.admin?
+  end
+
+  def admin?
+    user.admin?
+  end
+
+  def pricing?
+    # The user must be associated with the record (organization)
+    # and have the 'owner' role within that organization.
+    user.present? && record.present? && user.organization == record && user.role == "owner"
+  end
+
+  class Scope < Scope
+    def resolve
+      if user.admin?
+        scope.all
+      else
+        # If not an admin, scope to organizations where the user is a member,
+        # or adjust as needed for your application's logic.
+        # For now, keeping it simple and restrictive like other policies.
+        # If users should see their own organization, this would be:
+        # scope.where(id: user.organization_id)
+        scope.none
+      end
+    end
+  end
+end

@@ -1,0 +1,121 @@
+<% content_for :title, "Manage Organization" %>
+
+<div class="space-y-8">
+  <div class="flex justify-between items-center">
+    <h1 class="text-3xl font-bold">Manage Organization: <%= @organization.name %></h1>
+    <%# Add any primary action button here if needed, e.g., "View Audit Log" %>
+  </div>
+
+  <!-- Organization Details Card -->
+  <%= render UI::CardComponent.new(title: "Organization Details") do |card| %>
+    <% card.with_body do %>
+      <%= simple_form_for @organization, url: manage_organization_path, method: :patch, html: { class: "space-y-4" } do |f| %>
+        <%= f.error_notification %>
+        <%= render "devise/shared/error_messages", resource: @organization %>
+
+        <%= f.input :name,
+                    label: "Organization Name",
+                    required: true,
+                    input_html: { class: "input input-bordered w-full md:max-w-md", autocomplete: "organization" },
+                    hint: "This is the name that will be displayed for your organization." %>
+        
+        <%# Add other editable organization fields here if needed %>
+        <%# Example: %>
+        <%#= f.input :subdomain, label: "Subdomain (Optional)", input_html: { class: "input input-bordered w-full md:max-w-md" } %>
+        <%#= f.input :time_zone, label: "Time Zone", collection: ActiveSupport::TimeZone.all.map { |tz| [tz.to_s, tz.name] }, selected: @organization.time_zone, input_html: { class: "select select-bordered w-full md:max-w-md" } %>
+
+        <div class="card-actions justify-start">
+          <%= f.button :submit, "Update Organization", class: "btn btn-primary" %>
+        </div>
+      <% end %>
+    <% end %>
+  <% end %>
+
+  <!-- Subscription & Billing Card -->
+  <% if policy(@organization).pricing? %>
+    <%= render UI::CardComponent.new(title: "Subscription & Billing") do |card| %>
+      <% card.with_body do %>
+        <p class="text-sm text-base-content/70 mb-4">Manage your organization's subscription and billing details.</p>
+        <div class="card-actions justify-start">
+          <%= link_to "View Pricing & Plans", organization_pricing_path(@organization), class: "btn btn-accent" %>
+        </div>
+      <% end %>
+    <% end %>
+  <% end %>
+
+  <!-- Invite New User Card -->
+  <%= render UI::CardComponent.new(title: "Invite New Member") do |card| %>
+    <% card.with_body do %>
+      <p class="text-sm text-base-content/70 mb-4">Invite a new member to join <%= @organization.name %>.</p>
+      <%= simple_form_for :invitation, url: invite_organization_path, html: { class: "space-y-4", data: { turbo: true } } do |f| %>
+        <%# Devise Invitable doesn't typically show errors on this form directly, but handles them via controller flashes. %>
+        <%# If you have custom error handling for invitations, you can add it here. %>
+        
+        <%= f.input :email,
+                    label: "Email Address",
+                    required: true,
+                    placeholder: "member@example.com",
+                    input_html: { class: "input input-bordered w-full md:max-w-md", type: :email, autocomplete: "email" } %>
+
+        <%# You can add a role selection here if you have roles for organization members %>
+        <%# Example: %>
+        <%#= f.input :role,
+                      # collection: User.roles.keys.map { |role| [role.humanize, role] },
+                      # label: "Role",
+                      # input_html: { class: "select select-bordered w-full md:max-w-md" } %>
+
+        <div class="card-actions justify-start">
+          <%= f.button :submit, "Send Invitation", class: "btn btn-secondary" %>
+        </div>
+      <% end %>
+    <% end %>
+  <% end %>
+
+  <!-- Organization Members Card -->
+  <%= render UI::CardComponent.new(title: "Organization Members (#{@members.count})") do |card| %>
+    <% card.with_body do %> <%# Removed class: "p-0" to fix ArgumentError %>
+      <% if @members.present? %>
+        <div class="overflow-x-auto">
+          <table class="table table-zebra w-full">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Joined</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @members.each do |member| %>
+                <tr>
+                  <td><%= member.name || "N/A" %></td>
+                  <td><%= member.email %></td>
+                  <td><span class="badge badge-ghost badge-sm"><%= member.role.humanize %></span></td>
+                  <td><%= time_ago_in_words(member.created_at) %> ago</td>
+                  <td>
+                    <%# Add actions like "Remove" or "Change Role" here if applicable %>
+                    <%# Example: %>
+                    <%#= link_to "Edit", '#', class: "btn btn-xs btn-ghost" %>
+                    <%#= link_to "Remove", '#', class: "btn btn-xs btn-error btn-ghost", data: { turbo_method: :delete, turbo_confirm: "Are you sure?" } %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <div class="p-6 text-center">
+          <p class="text-base-content/70">There are no members in this organization yet.</p>
+          <p class="text-base-content/70 mt-1">Why not invite someone?</p>
+        </div>
+      <% end %>
+
+      <% if @members.present? && @members.respond_to?(:total_pages) # Check for pagination %>
+        <div class="flex justify-center p-4 border-t border-base-300">
+          <%#= paginate @members %>
+        </div>
+      <% end %>
+    <% end %>
+  <% end %>
+</div>

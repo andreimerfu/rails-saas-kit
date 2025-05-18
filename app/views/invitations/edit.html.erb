@@ -1,0 +1,35 @@
+<% content_for :title, "Set Your Password" %>
+
+<%= render UI::CardComponent.new(title: "Set Your Password", subtitle: "You've been invited! Please set a password to activate your account.", class: "max-w-md mx-auto") do |card| %>
+  <% card.with_body do %>
+    <%= simple_form_for(@user, as: :user, url: invitation_path(@user.invitation_token), html: { method: :patch, class: "space-y-4", data: { turbo: false } }) do |f| %>
+      <%= f.error_notification %>
+      <%= render "devise/shared/error_messages", resource: @user %>
+
+      <%= f.hidden_field :invitation_token %>
+
+      <%= f.input :password,
+                  label: "New password",
+                  required: true,
+                  autofocus: true,
+                  hint: ("#{@minimum_password_length} characters minimum" if @minimum_password_length),
+                  input_html: {
+                    class: "input input-bordered w-full",
+                    autocomplete: "new-password"
+                  } %>
+
+      <%= f.input :password_confirmation,
+                  label: "Confirm new password",
+                  required: true,
+                  input_html: {
+                    class: "input input-bordered w-full",
+                    autocomplete: "new-password"
+                  } %>
+
+      <%= f.button :submit, "Set Password and Accept Invitation", class: "btn btn-primary w-full" %>
+    <% end %>
+  <% end %>
+  <% card.with_footer class: "text-center text-sm" do %>
+    <p>If you don't want to accept this invitation, you can ignore this page.</p>
+  <% end %>
+<% end %>

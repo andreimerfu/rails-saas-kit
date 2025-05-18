@@ -1,0 +1,72 @@
+<% content_for :title, "Edit Profile" %>
+
+<%= render UI::CardComponent.new(title: "Edit Profile", class: "max-w-lg mx-auto") do |card| %>
+  <% card.with_body do %>
+    <%= simple_form_for(resource, as: resource_name, url: registration_path(resource_name), html: { method: :put, class: "space-y-4" }) do |f| %>
+      <%= f.error_notification %>
+      <%= render "devise/shared/error_messages", resource: resource %>
+
+      <%= f.input :name,
+                  required: true,
+                  autofocus: true,
+                  label: "Full name",
+                  input_html: { class: "input input-bordered w-full", autocomplete: "name" } %>
+
+      <%= f.input :email,
+                  required: true,
+                  label: "Email address",
+                  input_html: { class: "input input-bordered w-full", autocomplete: "email" } %>
+
+      <% if devise_mapping.confirmable? && resource.pending_reconfirmation? %>
+        <%= render UI::AlertComponent.new(message: "Currently waiting confirmation for: #{resource.unconfirmed_email}", level: :warning, class: "mt-4") %>
+      <% end %>
+
+      <div class="divider pt-2 pb-0">Change Password (Optional)</div>
+
+      <%= f.input :password,
+                  label: "New password",
+                  hint: "Leave blank if you don't want to change it.",
+                  required: false,
+                  input_html: { class: "input input-bordered w-full", autocomplete: "new-password" } %>
+
+      <%= f.input :password_confirmation,
+                  label: "Confirm new password",
+                  required: false,
+                  input_html: { class: "input input-bordered w-full", autocomplete: "new-password" } %>
+      
+      <div class="divider pt-2 pb-0">Confirm Changes</div>
+
+      <%= f.input :current_password,
+                  label: "Current password",
+                  hint: "We need your current password to confirm your changes.",
+                  required: true,
+                  input_html: { class: "input input-bordered w-full", autocomplete: "current-password" } %>
+
+      <%= f.button :submit, "Update Profile", class: "btn btn-primary w-full mt-6" %>
+    <% end %>
+  <% end %>
+<% end %>
+
+<div class="max-w-lg mx-auto mt-8">
+  <%= render UI::CardComponent.new(title: "Delete Account", class: "border-error") do |card| %>
+    <% card.with_body do %> <%# Removed class: "text-center" to fix ArgumentError %>
+      <div class="text-center"> <%# Added wrapper for text centering %>
+        <p class="text-sm text-base-content/80 mb-4">
+          Once you delete your account, all of your data will be permanently removed. This action cannot be undone.
+        </p>
+      <%= button_to "Delete My Account",
+                    registration_path(resource_name),
+                    data: {
+                      confirm: "Are you absolutely sure you want to delete your account? This action is irreversible.",
+                      turbo_confirm: "Are you absolutely sure you want to delete your account? This action is irreversible."
+                    },
+                    method: :delete,
+                    class: "btn btn-error w-full" %>
+      </div>
+    <% end %>
+  <% end %>
+</div>
+
+<div class="text-center mt-8">
+  <%= link_to "← Back to Dashboard", dashboard_path, class: "link link-hover text-sm" %>
+</div>
