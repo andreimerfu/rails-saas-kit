@@ -7,4 +7,4 @@ smtp:
 stripe:
   secret_key: <%= ENV['STRIPE_SECRET_KEY'] %>
   publishable_key: <%= ENV['STRIPE_PUBLISHABLE_KEY'] %>
-  c: <%= ENV['STRIPE_SIGNING_SECRET'] %>
+  signing_secret: <%= ENV['STRIPE_SIGNING_SECRET'] %>

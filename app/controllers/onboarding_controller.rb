@@ -36,7 +36,7 @@ class OnboardingController < ApplicationController
       @organization.domain = request.domain # Or derive from current_user if more appropriate
 
       if @organization.save
-        current_user.update!(organization: @organization, role: :admin)
+        current_user.update!(organization: @organization, role: :owner)
         # Wicked will automatically try to redirect to the next step's #show action
         # If this is the last step before 'complete', it will go to 'complete'.
         # If 'complete' is the next step, it will render_wizard(@organization) or redirect to it.
