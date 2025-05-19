@@ -1,3 +1,10 @@
+GIT
+  remote: git@github.com:andreimerfu/dry-workflow.git
+  revision: 83166a3073251d8c8eb0681f4a4964e617e5c90e
+  specs:
+    dry-workflow (0.1.0)
+      dry-monads (~> 1.6)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -576,6 +583,7 @@ DEPENDENCIES
   dry-monads
   dry-transaction
   dry-types (~> 1.7)
+  dry-workflow!
   enum_help
   heroicon (~> 1.0)
   inline_svg

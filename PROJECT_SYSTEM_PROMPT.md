@@ -101,74 +101,137 @@ This project utilizes a specific stack and follows particular architectural patt
     ```
 *   **Helpers:** Include necessary helpers (e.g., `IconsHelper`, `ThemesHelper`) in your component class.
 
-### 2.4. Service Objects (`app/services/`)
-*   **Purpose:** To encapsulate complex business logic, keeping controllers and models thin. This is an **aspirational pattern to be strictly followed** for new complex business logic.
-*   **Location:** Create new service objects in the `app/services/` directory.
-*   **Structure:** Plain Old Ruby Objects (POROs).
-    *   Typically a single public method (e.g., `call`, `perform`, `execute`).
-    *   The initializer can take necessary dependencies or data.
-    *   Return a clear result: a custom result object (e.g., `OpenStruct` or a dedicated class with `success?` and `data`/`error` attributes), a boolean, or raise specific, handled exceptions.
-*   **Interaction:** Called from controllers.
+### 2.4. Service Objects (`app/services/`) using Dry::Workflow
+*   **Purpose:** To encapsulate complex, multi-step business logic, keeping controllers and models thin. This is the **preferred pattern for new complex business logic**, especially when operations involve multiple steps or require rollbacks.
+*   **Framework:** Utilize the `dry-workflow` gem (already included in this project) to structure these service objects. `Dry::Workflow` provides a DSL for defining steps (`step`, `map`, `try`) and handling rollbacks automatically.
+*   **Location:** Create new workflow services in the `app/services/` directory, often namespaced (e.g., `app/services/users/invitation_workflow.rb`).
+*   **Structure:**
+    *   Include `Dry::Workflow` and `Dry::Monads[:result, :do]`.
+    *   Define steps using the DSL. Each step method should return `Success(value)` or `Failure(value)`.
+    *   Define `rollback:` operations for steps that have side effects.
+    *   The main public method is `call(initial_input)`.
+*   **Return Value:** The `call` method of a `Dry::Workflow` service returns a `Dry::Monads::Result` object (`Success(value)` or `Failure(failure_payload)`).
+*   **Interaction:** Called from controllers. The controller then inspects the `Result` to determine the outcome.
 
-**Example: A `UserInvitationService`**
+**Example: A `Users::InvitationWorkflow` using `Dry::Workflow`**
 ```ruby
-# app/services/user_invitation_service.rb
-class UserInvitationService
-  attr_reader :inviter, :email, :organization
+# app/services/users/invitation_workflow.rb
+require 'dry/workflow'
+require 'dry/monads/all' # For Success, Failure, and Do notation
 
-  def initialize(inviter:, email:, organization:)
-    @inviter = inviter
-    @email = email
-    @organization = organization
-  end
+module Users
+  class InvitationWorkflow
+    include Dry::Workflow
+    include Dry::Monads[:result, :do] # Enable Do notation for cleaner chaining
 
-  def call
-    # Basic validation (can be more sophisticated)
-    return OpenStruct.new(success?: false, error: "Email cannot be blank.") if email.blank?
-    unless email =~ URI::MailTo::EMAIL_REGEXP
-      return OpenStruct.new(success?: false, error: "Invalid email format.")
-    end
+    # Define the steps of the invitation process
+    step :validate_input
+    step :check_existing_user
+    step :invite_user, rollback: :log_failed_invitation_attempt # Or potentially delete a partially created user if that was a step
+    map :prepare_success_message
 
-    existing_user = User.find_by(email: email)
-    if existing_user
-      if existing_user.organization == organization
-        return OpenStruct.new(success?: false, error: "#{email} is already a member of this organization.")
-      else
-        return OpenStruct.new(success?: false, error: "#{email} belongs to a different organization.")
+    # Dependencies can be injected via the initializer if needed,
+    # but for this example, we'll pass everything through the `call` method's input.
+    # def initialize(mailer_service: UserMailer)
+    #   @mailer_service = mailer_service
+    # end
+
+    private
+
+    def validate_input(inviter:, email:, organization:)
+      if email.blank?
+        return Failure(type: :validation, field: :email, message: "Email cannot be blank.")
       end
+      unless email =~ URI::MailTo::EMAIL_REGEXP
+        return Failure(type: :validation, field: :email, message: "Invalid email format.")
+      end
+      unless inviter && organization
+        return Failure(type: :validation, message: "Inviter and organization must be present.")
+      end
+      Success(inviter: inviter, email: email, organization: organization) # Pass data to next step
     end
 
-    invited_user = User.invite!(email: email, organization: organization, invited_by: inviter) # Assuming DeviseInvitable
-
-    if invited_user.persisted? && invited_user.errors.empty?
-      # Potentially send a custom notification or perform other actions
-      OpenStruct.new(success?: true, user: invited_user, message: "Invitation sent to #{email}.")
-    else
-      error_messages = invited_user.errors.full_messages.to_sentence
-      OpenStruct.new(success?: false, error: "Failed to send invitation: #{error_messages}")
+    def check_existing_user(email:, organization:, **rest) # Pass through other data with **rest
+      existing_user = User.find_by(email: email)
+      if existing_user
+        if existing_user.organization_id == organization.id # Use .id for comparison if organization is an object
+          return Failure(type: :conflict, message: "#{email} is already a member of this organization.")
+        else
+          return Failure(type: :conflict, message: "#{email} belongs to a different organization.")
+        end
+      end
+      Success(email: email, organization: organization, **rest)
     end
-  rescue StandardError => e
-    Rails.logger.error "UserInvitationService Error: #{e.message}"
-    OpenStruct.new(success?: false, error: "An unexpected error occurred.")
+
+    def invite_user(inviter:, email:, organization:, **rest)
+      # Assuming DeviseInvitable is configured on the User model
+      invited_user = User.invite!(email: email, organization: organization, invited_by: inviter)
+
+      if invited_user.persisted? && invited_user.errors.empty?
+        # @mailer_service.invitation_sent_notification(invited_user).deliver_later # If using injected mailer
+        Success(invited_user: invited_user, inviter: inviter, email: email, organization: organization, **rest)
+      else
+        error_messages = invited_user.errors.full_messages.to_sentence
+        Failure(type: :invitation_failed, message: "Failed to send invitation: #{error_messages}", raw_errors: invited_user.errors)
+      end
+    rescue StandardError => e
+      Rails.logger.error "UserInvitationWorkflow: Invite step error - #{e.message}"
+      Failure(type: :exception, message: "An unexpected error occurred during invitation: #{e.message}")
+    end
+
+    def log_failed_invitation_attempt(failure_data_from_invite_user_step)
+      # This rollback is called if 'invite_user' succeeded but a *subsequent* step failed.
+      # If 'invite_user' itself failed, this rollback is NOT called.
+      # 'failure_data_from_invite_user_step' here is the *Success output* of the invite_user step.
+      Rails.logger.warn "UserInvitationWorkflow: Rollback for 'invite_user' triggered. Data: #{failure_data_from_invite_user_step.inspect}"
+      # Example: If User.invite! created a pending record that needs cleanup and a later step failed.
+      # User.where(email: failure_data_from_invite_user_step[:email], invitation_token: non_nil).destroy_all
+    end
+
+    def prepare_success_message(invited_user:, email:, **_rest)
+      # This map step transforms the successful output of the previous step
+      {
+        success: true, # Keep this for controller convenience if desired
+        user: invited_user,
+        message: "Invitation sent to #{email}."
+      }
+    end
   end
 end
 ```
 **Usage in a controller:**
 ```ruby
-# app/controllers/organizations_controller.rb (modified example)
-def invite_member
-  organization = current_user.organization
-  service_result = UserInvitationService.new(
-    inviter: current_user,
-    email: params[:user_email], # Assuming param is :user_email
-    organization: organization
-  ).call
+# app/controllers/organizations_controller.rb (example)
+class OrganizationsController < ApplicationController
+  # ... other actions ...
 
-  if service_result.success?
-    redirect_to manage_organization_path, notice: service_result.message
-  else
-    redirect_to manage_organization_path, alert: service_result.error
+  def invite_member
+    organization = current_user.organization # Ensure organization is correctly fetched
+    # Ensure current_user is set, e.g., by Devise
+    unless current_user && organization
+      redirect_to root_path, alert: "Authentication error or organization not found."
+      return
+    end
+
+    workflow_input = {
+      inviter: current_user,
+      email: params[:user_email], # Assuming param is :user_email from form
+      organization: organization
+    }
+    service_result = Users::InvitationWorkflow.new.call(workflow_input)
+
+    if service_result.success?
+      # service_result.value! contains the output of the 'prepare_success_message' map step
+      redirect_to manage_organization_path, notice: service_result.value![:message]
+    else
+      # service_result.failure contains the payload from the failing step
+      failure_payload = service_result.failure
+      alert_message = "Invitation failed: #{failure_payload[:message] || failure_payload.inspect}"
+      redirect_to manage_organization_path, alert: alert_message
+    end
   end
+
+  # ... other actions ...
 end
 ```
 
