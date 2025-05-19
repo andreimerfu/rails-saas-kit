@@ -23,6 +23,94 @@ This project utilizes a specific stack and follows particular architectural patt
     *   Views: [`app/views/`](app/views/)
     *   Controllers: [`app/controllers/`](app/controllers/)
 *   **Routing:** Defined in [`config/routes.rb`](config/routes.rb).
+### 2.1.1. Rails Concerns ([`app/models/concerns/`](app/models/concerns/), [`app/controllers/concerns/`](app/controllers/concerns/))
+*   **Purpose:** To promote code reuse and keep models and controllers lean by extracting *genuinely shared, cohesive functionality* into modules. Concerns are a Rails convention for including modules that extend `ActiveSupport::Concern`. They should be used judiciously when a set of methods, scopes, or callbacks logically belong together and are applicable to multiple classes.
+*   **Location:**
+    *   Model concerns: [`app/models/concerns/`](app/models/concerns/)
+    *   Controller concerns: [`app/controllers/concerns/`](app/controllers/concerns/)
+*   **Structure:**
+    *   Define a module, typically in its own file (e.g., [`app/models/concerns/publishable.rb`](app/models/concerns/publishable.rb)).
+    *   Extend `ActiveSupport::Concern` to manage dependencies and provide `included` blocks.
+    ```ruby
+    # app/models/concerns/publishable.rb
+    module Publishable
+      extend ActiveSupport::Concern
+
+      included do
+        scope :published, -> { where(published_at: ..Time.current) }
+        scope :unpublished, -> { where(published_at: nil).or(where(published_at: Time.current..)) }
+      end
+
+      def published?
+        published_at.present? && published_at <= Time.current
+      end
+
+      def publish!
+        update(published_at: Time.current)
+      end
+
+      def unpublish!
+        update(published_at: nil)
+      end
+    end
+    ```
+*   **Usage in Models:**
+    *   Include the concern in your model using `include ConcernNameable` (e.g., `include Publishable`).
+    ```ruby
+    # app/models/article.rb
+    class Article < ApplicationRecord
+      include Publishable
+      # ... other article logic ...
+    end
+
+    # app/models/post.rb
+    class Post < ApplicationRecord
+      include Publishable
+      # ... other post logic ...
+    end
+    ```
+*   **Usage in Controllers (Example):**
+    ```ruby
+    # app/controllers/concerns/common_setups.rb
+    module CommonSetups
+      extend ActiveSupport::Concern
+
+      included do
+        before_action :set_default_page_title
+      end
+
+      private
+
+      def set_default_page_title
+        @page_title = "My Application" # A generic default
+      end
+    end
+    ```
+    ```ruby
+    # app/controllers/public_pages_controller.rb
+    class PublicPagesController < ApplicationController
+      include CommonSetups # @page_title will be set by the concern's before_action
+
+      def home
+        # @page_title can be overridden here if needed for this specific action
+        @page_title = "Welcome Home"
+      end
+
+      # ... other actions ...
+    end
+    ```
+*   **Benefits:**
+    *   **DRY (Don't Repeat Yourself):** Avoids duplicating common methods, scopes, or callbacks across multiple models or controllers.
+    *   **Organization:** Breaks down large model or controller files into smaller, more manageable pieces of functionality.
+    *   **Readability:** Makes the primary class (model or controller) easier to read by abstracting away shared logic.
+*   **When to Use:**
+    *   When you identify a well-defined set of responsibilities (methods, scopes, callbacks) that are duplicated across multiple models or controllers and represent a cohesive capability (e.g., making a model `Taggable`, `Sortable`, `Publishable`) or a common set of setup actions for controllers.
+    *   For cross-cutting concerns that apply to several classes but don't fit neatly into a superclass or inheritance hierarchy. Avoid creating concerns for trivial or loosely related methods; sometimes, a simple helper method or a plain Ruby module included directly is sufficient.
+*   **Considerations:**
+    *   **Judicious Use is Key:** Overuse can lead to "include hell," where it becomes difficult to trace method origins and understand class behavior. Prefer concerns for genuinely shared, cohesive functionality, not just any repeated line of code. If a concern is only used by two classes, evaluate if the complexity of a concern is warranted over direct implementation or a shared helper module.
+    *   **Naming Convention:** Model concerns that add a "capability" to a class are often named with an "-able" suffix (e.g., `Publishable`, `Taggable`, `Sluggable`). Controller concerns might group common setup actions (like `CommonSetups` in the example) and may not always follow this suffix strictly, but should still have descriptive names.
+    *   **Cohesion:** Ensure the logic within a concern is highly cohesive. If a concern is doing too many unrelated things, it might need to be split or re-evaluated.
+    *   **Testing:** Ensure concerns are well-tested, both in isolation (if complex enough, by testing the module directly, perhaps with a dummy class) and through the classes that include them.
 
 ### 2.2. DaisyUI & Tailwind CSS
 *   **Styling:** DaisyUI is the primary component library, built on Tailwind CSS.
@@ -274,307 +362,161 @@ class WidgetsController < ApplicationController
     end
   end
 
-  private
+      def create_invitation(validated_params)
+        # User.invite! is from DeviseInvitable
+        invited_user = User.invite!(
+          email: validated_params[:email],
+          organization: validated_params[:organization],
+          invited_by: validated_params[:inviter]
+        )
+        # 'try' will automatically wrap this in Success(invited_user)
+        # or Failure(type: :active_record_error, error: e) if RecordInvalid is raised.
+        # For other errors, it would be Failure(error: e) by default.
+        # We can customize the failure if needed by passing a block to `try`.
+        Success(invited_user) # Explicit success if no error
+      end
 
-  def widget_params_on_create
-    params.require(:widget).permit(:name, :description, :category_id)
-  end
+      def send_invitation_email(invited_user)
+        # This is a 'tee' step, so its return value (Success/Failure) doesn't affect the main flow
+        # but allows for logging or specific handling if email sending fails.
+        UserMailer.invitation_email(invited_user).deliver_later
+        # Rails.logger.info "Invitation email queued for #{invited_user.email}"
+        Success(invited_user) # Pass the user to the next step
+      end
 
-  def set_widget
-    @widget = policy_scope(Widget).find(params[:id]) # Pundit scoped find
-    authorize @widget # Pundit
-  end
-end
-```
-
-### 2.6. StimulusJS (`app/assets/javascripts/controllers/`)
-*   **Purpose:** For client-side interactivity that enhances the user experience without requiring a full SPA framework.
-*   **Structure:**
-    *   Controllers are JavaScript classes (e.g., [`app/assets/javascripts/controllers/theme_controller.js`](app/assets/javascripts/controllers/theme_controller.js)).
-    *   Connect to HTML using `data-controller="controller-name"`.
-    *   Use `data-action` for event handling and `data-controller-name-target="targetName"` for accessing elements.
-*   **Registration:** Controllers are registered in [`app/assets/javascripts/controllers/index.js`](app/assets/javascripts/controllers/index.js).
-
-**Example: A simple Stimulus controller to toggle visibility**
-```javascript
-// app/assets/javascripts/controllers/toggle_controller.js
-import { Controller } from "@hotwired/stimulus"
-
-export default class extends Controller {
-  static targets = [ "content" ]
-  static classes = [ "hidden" ] // e.g., "d-none" or Tailwind's "hidden"
-
-  toggle() {
-    this.contentTarget.classList.toggle(this.hiddenClass)
-  }
-}
-```
-```html
-<%# In a view %>
-<div data-controller="toggle" data-toggle-hidden-class="hidden">
-  <button data-action="click->toggle#toggle" class="btn btn-sm">Toggle Content</button>
-  <div data-toggle-target="content" class="mt-2 p-4 border rounded hidden">
-    This is the content that will be toggled.
-  </div>
-</div>
-```
-
-### 2.7. Devise & Authentication
-*   **Setup:** Standard Devise for user authentication (see [`config/initializers/devise.rb`](config/initializers/devise.rb), user model [`app/models/user.rb`](app/models/user.rb), and controllers in `app/controllers/users/`).
-*   **Features:** Registration, login/logout, password reset, user invitations (`devise_invitable`).
-*   **Current User:** Access via `current_user` helper in controllers and views.
-*   **Authentication Hook:** `before_action :authenticate_user!` in controllers.
-
-### 2.8. Pundit & Authorization
-*   **Setup:** Pundit for authorization (see [`app/policies/application_policy.rb`](app/policies/application_policy.rb)).
-*   **Policies:** Create policies in `app/policies/` (e.g., [`app/policies/organization_policy.rb`](app/policies/organization_policy.rb)).
-*   **Usage in Controllers:**
-    *   `authorize @resource` for member actions.
-    *   `policy_scope(Resource)` for collection actions (index).
-    *   `after_action :verify_authorized` and `after_action :verify_policy_scoped`.
-*   **Usage in Views:** `policy(@resource).action?`
-
-### 2.9. SimpleForm
-*   **Forms:** Used for building forms, styled with DaisyUI via [`config/initializers/simple_form_daisyui.rb`](config/initializers/simple_form_daisyui.rb).
-*   **Example:**
-    ```erb
-    <%# app/views/widgets/_form.html.erb %>
-    <%= simple_form_for(@widget) do |f| %>
-      <%= f.error_notification %>
-      <%= f.input :name %>
-      <%= f.input :description, as: :text %>
-      <%= f.association :category %>
-      <%= f.button :submit, class: "btn btn-primary" %>
-    <% end %>
+      def prepare_success_response(invited_user)
+        # This is a 'map' step, it always succeeds and transforms the input.
+        {
+          type: :invitation_sent,
+          user: invited_user,
+          message: "Invitation sent to #{invited_user.email}."
+        }
+      end
+    end
     ```
 
-### 2.10. Noticed (`app/notifications/`)
-*   **Purpose:** For handling in-app and potentially other types of notifications.
-*   **Structure:** Notification classes inherit from `Noticed::Base` (e.g., [`app/notifications/user_notification.rb`](app/notifications/user_notification.rb)).
-*   **Delivery Methods:** Configure delivery methods (e.g., database, email, ActionCable).
-*   **Triggering:** `MyNotification.with(params).deliver(recipient)`.
+*   **Usage in a Controller:**
+    ```ruby
+    # app/controllers/invitations_controller.rb (example)
+    def create
+      organization = current_user.organization # Or however you get the organization
 
-### 2.11. Organizations & Stripe Integration
-*   **Organizations (`app/models/organization.rb`):**
-    *   Central to the SaaS structure. Users belong to organizations.
-    *   Tightly coupled with Stripe for subscriptions.
-    *   Manages `stripe_customer_id` and `stripe_subscription_details` (JSONB).
-    *   Handles Stripe webhooks directly in the model (e.g., `after_checkout_session_completed!`) to update subscription status. See the model for details on which webhooks are handled.
-*   **Stripe (`config/initializers/stripe.rb`, `config/stripe/`):**
-    *   The `stripe-rails` gem is likely used. Plans are defined in `config/stripe/plans.rb` and `config/stripe/products.rb`.
-    *   The [`OrganizationsController#pricing`](app/controllers/organizations_controller.rb:58) action displays these plans.
-    *   Checkout sessions are likely initiated by `stripe-rails` view helpers (e.g., `subscribe_button_for`).
-    *   Subscription management (updates, cancellations) is primarily handled via webhooks updating the `Organization` model.
-*   **Authorization for Organizations:**
-    *   [`OrganizationPolicy`](app/policies/organization_policy.rb) defines access rules. For example, only "owners" of an organization can view its pricing/subscription page.
-    *   The `is_owner_or_admin?` method on the `User` model is used for some controller-level authorization.
+      service_params = {
+        inviter: current_user,
+        email: params[:user_email], # Assuming param is :user_email
+        organization: organization
+      }
 
-### 2.12. RSpec (`spec/`)
-*   **Testing Framework:** RSpec is the designated testing framework for this project.
-*   **Location of Specs:**
-    *   Model specs: `spec/models/`
-    *   Controller specs: `spec/controllers/`
-    *   ViewComponent specs: `spec/components/`
-    *   Service Object specs: `spec/services/`
-    *   Feature/System specs: `spec/features/` or `spec/system/`
-    *   Policy specs: `spec/policies/`
-    *   Helper specs: `spec/helpers/`
-*   **Factories:** Use FactoryBot (likely configured in `spec/factories/`) for generating test data efficiently and consistently.
+      result = User::Invite.call(service_params)
 
-#### Testing Philosophy
-*   **TDD/BDD Preferred:** While not strictly enforced for every minor change, aim to practice Test-Driven Development or Behavior-Driven Development, especially for new features or complex logic. Write tests before or alongside your implementation.
-*   **Isolation and Speed:** Tests should be well-isolated to avoid cascading failures and ensure they run quickly. Mock and stub external dependencies where appropriate, especially in unit tests (models, services, components).
-*   **Test Behavior, Not Implementation:** Focus your tests on the public interface and observable behavior of your objects and components. Avoid testing private methods directly; their functionality should be covered by tests of the public methods that use them.
-*   **Readability and Maintainability:** Write clear, descriptive tests. They serve as living documentation for your code. Group related tests using `context` blocks.
-*   **Balanced Test Pyramid:** Strive for a healthy balance:
-    *   **Unit Tests (Models, Services, Components, Policies):** Form the largest part of your test suite. They are fast and pinpoint errors accurately.
-    *   **Integration Tests (Controller Specs, Request Specs):** Test the interaction between different parts of your application (e.g., controller logic, routing, basic view rendering).
-    *   **System/Feature Specs:** Test end-to-end user flows through the browser. These are the most comprehensive but also the slowest, so use them judiciously for critical paths.
-*   **Coverage:** Aim for high test coverage, but prioritize testing critical and complex parts of the application. Coverage is a means to an end (confidence in your code), not the end itself.
-
-#### ViewComponent Test Example
-ViewComponents should be tested in isolation to verify their rendering logic based on different inputs. The `view_component-rspec` gem or `ViewComponent::TestHelpers` provides `render_inline`.
-
-**Example: Testing the `UserAvatarComponent` (conceptualized earlier)**
-```ruby
-# spec/components/user_avatar_component_spec.rb
-require "rails_helper"
-
-RSpec.describe UserAvatarComponent, type: :component do
-  let(:user) { build_stubbed(:user, id: 1, name: "Test User") } # Using FactoryBot
-
-  context "when initialized with default size" do
-    subject(:component) { render_inline(described_class.new(user: user)) }
-
-    it "renders the user's avatar" do
-      expect(component.css("img").first["src"]).to include("https://i.pravatar.cc/150?u=#{user.id}")
-      expect(component.css("img").first["alt"]).to eq(user.name)
+      case result
+      in Success(payload) # payload is { type: :invitation_sent, user: ..., message: ... }
+        redirect_to manage_organization_path, notice: payload[:message]
+      in Failure(type: :validation_error, errors: errs)
+        error_message = errs.map { |field, messages| "#{field.to_s.humanize} #{messages.join(', ')}" }.join('; ')
+        redirect_to new_invitation_path, alert: "Invitation failed: #{error_message}"
+      in Failure(type: :user_exists_in_org, message: msg)
+        redirect_to new_invitation_path, alert: msg
+      in Failure(type: :active_record_error, error: ar_error) # From 'try' step
+        Rails.logger.error "User::Invite failed during DB operation: #{ar_error.message}"
+        redirect_to new_invitation_path, alert: "Could not save invitation: #{ar_error.record.errors.full_messages.to_sentence}"
+      in Failure(error_payload) # Catch-all for other failures
+        Rails.logger.error "User::Invite unexpected failure: #{error_payload.inspect}"
+        redirect_to new_invitation_path, alert: "An unexpected error occurred while sending the invitation."
+      end
     end
+    ```
 
-    it "applies medium size class by default" do
-      # Assuming 'w-12 h-12' is the class for medium size from the component's logic
-      expect(component.css(".avatar > div").first["class"]).to include("w-12 h-12")
+*   **RSpec Test Example:**
+    ```ruby
+    # spec/services/user/invite_spec.rb
+    require 'rails_helper'
+
+    RSpec.describe User::Invite do
+      let(:inviter) { create(:user, :owner) } # Assuming factory with traits
+      let(:organization) { create(:organization) }
+      let(:valid_email) { "new_user@example.com" }
+      let(:valid_params) { { inviter: inviter, email: valid_email, organization: organization } }
+
+      before do
+        # Ensure inviter is associated with the organization for some tests
+        inviter.update(organization: organization)
+      end
+
+      describe ".call" do
+        context "with valid parameters" do
+          it "returns a Success monad with the correct payload" do
+            # Stub UserMailer to prevent actual email sending during tests
+            allow(UserMailer).to receive_message_chain(:invitation_email, :deliver_later)
+
+            result = described_class.call(valid_params)
+            expect(result).to be_success
+            expect(result.value![:type]).to eq(:invitation_sent)
+            expect(result.value![:user]).to be_a(User)
+            expect(result.value![:user].email).to eq(valid_email)
+            expect(result.value![:message]).to eq("Invitation sent to #{valid_email}.")
+          end
+
+          it "creates a new user record" do
+            allow(UserMailer).to receive_message_chain(:invitation_email, :deliver_later)
+            expect { described_class.call(valid_params) }.to change(User, :count).by(1)
+          end
+
+          it "sends an invitation email" do
+            # More specific mailer test
+            mailer_double = instance_double(ActionMailer::MessageDelivery)
+            expect(UserMailer).to receive(:invitation_email).with(an_instance_of(User)).and_return(mailer_double)
+            expect(mailer_double).to receive(:deliver_later)
+
+            described_class.call(valid_params)
+          end
+        end
+
+        context "when input validation fails (e.g., blank email)" do
+          let(:invalid_params) { valid_params.merge(email: "") }
+
+          it "returns a Failure monad for validation_error" do
+            result = described_class.call(invalid_params)
+            expect(result).to be_failure
+            expect(result.failure[:type]).to eq(:validation_error)
+            expect(result.failure[:errors][:email]).to include("must be filled")
+          end
+
+          it "does not attempt to create a user or send an email" do
+            expect(User).not_to receive(:invite!)
+            expect(UserMailer).not_to receive(:invitation_email)
+            described_class.call(invalid_params)
+          end
+        end
+
+        context "when user already exists in the organization" do
+          before do
+            create(:user, email: valid_email, organization: organization)
+          end
+
+          it "returns a Failure monad of type :user_exists_in_org" do
+            result = described_class.call(valid_params)
+            expect(result).to be_failure
+            expect(result.failure[:type]).to eq(:user_exists_in_org)
+            expect(result.failure[:message]).to include("is already a member")
+          end
+        end
+
+        context "when User.invite! raises ActiveRecord::RecordInvalid" do
+          before do
+            allow(User).to receive(:invite!).and_raise(ActiveRecord::RecordInvalid.new(User.new)) # Pass a dummy model
+          end
+
+          it "returns a Failure monad of type :active_record_error" do
+            result = described_class.call(valid_params)
+            expect(result).to be_failure
+            expect(result.failure[:type]).to eq(:active_record_error)
+            expect(result.failure[:error]).to be_an_instance_of(ActiveRecord::RecordInvalid)
+          end
+        end
+      end
     end
-
-    it "renders within a div with class 'avatar'" do
-      expect(component.css("div.avatar")).to exist
-    end
-  end
-
-  context "when initialized with a specific size (e.g., large)" do
-    subject(:component) { render_inline(described_class.new(user: user, size: :large)) }
-
-    it "applies the large size class" do
-      # Assuming 'w-24 h-24' is the class for large size
-      expect(component.css(".avatar > div").first["class"]).to include("w-24 h-24")
-    end
-  end
-
-  context "when initialized with a small size" do
-    subject(:component) { render_inline(described_class.new(user: user, size: :small)) }
-
-    it "applies the small size class" do
-      # Assuming 'w-8 h-8' is the class for small size
-      expect(component.css(".avatar > div").first["class"]).to include("w-8 h-8")
-    end
-  end
-end
-```
-This example demonstrates:
-*   Using `render_inline` to render the component.
-*   Using CSS selectors (`component.css`) to inspect the rendered output.
-*   Testing different initialization states (default size, specific sizes).
-*   Using FactoryBot (`build_stubbed`) for test data.
-*   Organizing tests with `context`.
-
-Remember to require `rails_helper` and ensure your RSpec setup for components is correct (often handled by `view_component-rspec` or similar gems).
-
-#### Service Object Test Example
-Service Objects should be tested thoroughly for their business logic, including success and failure paths, and any side effects they are responsible for (though direct side effects like sending emails might be tested via mocking collaborators or checking enqueued jobs).
-
-**Example: Testing the `UserInvitationService` (conceptualized earlier)**
-```ruby
-# spec/services/user_invitation_service_spec.rb
-require 'rails_helper'
-
-RSpec.describe UserInvitationService do
-  let(:inviter) { create(:user, :owner) } # Assuming a factory with traits for roles
-  let(:organization) { create(:organization) }
-  let(:valid_email) { "new_user@example.com" }
-  let(:existing_member_email) { "member@example.com" }
-  let(:other_org_user_email) { "other@example.com" }
-
-  # Setup: Ensure inviter belongs to the organization
-  before do
-    inviter.update(organization: organization)
-    create(:user, email: existing_member_email, organization: organization) # User already in this org
-    create(:user, email: other_org_user_email, organization: create(:organization, name: "Other Org")) # User in a different org
-  end
-
-  subject(:service_call) { described_class.new(inviter: inviter, email: email_param, organization: organization).call }
-
-  context "with valid parameters for a new user" do
-    let(:email_param) { valid_email }
-
-    it "successfully invites the user" do
-      expect(User).to receive(:invite!).with(email: valid_email, organization: organization, invited_by: inviter).and_call_original
-      result = service_call
-      expect(result.success?).to be true
-      expect(result.user).to be_a(User)
-      expect(result.user.email).to eq(valid_email)
-      expect(result.message).to eq("Invitation sent to #{valid_email}.")
-    end
-
-    it "creates a new user record" do
-      expect { service_call }.to change(User, :count).by(1)
-    end
-  end
-
-  context "when email is blank" do
-    let(:email_param) { "" }
-
-    it "returns a failure with an error message" do
-      result = service_call
-      expect(result.success?).to be false
-      expect(result.error).to eq("Email cannot be blank.")
-    end
-
-    it "does not attempt to invite a user" do
-      expect(User).not_to receive(:invite!)
-      service_call
-    end
-  end
-
-  context "when email format is invalid" do
-    let(:email_param) { "invalidemail" }
-
-    it "returns a failure with an error message" do
-      result = service_call
-      expect(result.success?).to be false
-      expect(result.error).to eq("Invalid email format.")
-    end
-  end
-
-  context "when user is already a member of the organization" do
-    let(:email_param) { existing_member_email }
-
-    it "returns a failure with an appropriate error message" do
-      result = service_call
-      expect(result.success?).to be false
-      expect(result.error).to eq("#{existing_member_email} is already a member of this organization.")
-    end
-  end
-
-  context "when user exists and belongs to a different organization" do
-    let(:email_param) { other_org_user_email }
-
-    it "returns a failure with an appropriate error message" do
-      result = service_call
-      expect(result.success?).to be false
-      expect(result.error).to eq("#{other_org_user_email} belongs to a different organization.")
-    end
-  end
-
-  context "when User.invite! fails (e.g., validation error on User model during invite)" do
-    let(:email_param) { valid_email }
-
-    before do
-      # Simulate a failure during User.invite!
-      allow(User).to receive(:invite!).and_return(User.new(email: valid_email).tap { |u| u.errors.add(:base, "Simulated invite error") })
-    end
-
-    it "returns a failure with the error messages from the user object" do
-      result = service_call
-      expect(result.success?).to be false
-      expect(result.error).to eq("Failed to send invitation: Base Simulated invite error") # Adjust based on actual error formatting
-    end
-  end
-
-  context "when an unexpected standard error occurs" do
-    let(:email_param) { valid_email }
-
-    before do
-      allow(User).to receive(:invite!).and_raise(StandardError.new("Unexpected issue"))
-    end
-
-    it "logs the error and returns a generic failure message" do
-      expect(Rails.logger).to receive(:error).with("UserInvitationService Error: Unexpected issue")
-      result = service_call
-      expect(result.success?).to be false
-      expect(result.error).to eq("An unexpected error occurred.")
-    end
-  end
-end
-```
-This example for `UserInvitationServiceSpec` demonstrates:
-*   Setting up necessary data with FactoryBot, including different user scenarios.
-*   Using `subject` for the service call with varying parameters.
-*   Testing multiple `context` blocks for different scenarios (success, various failures).
-*   Checking the attributes of the returned result object (`success?`, `error`, `user`, `message`).
-*   Mocking/stubbing `User.invite!` to test specific outcomes or to simulate failures.
-*   Verifying that `User.invite!` is or is not called.
-*   Checking for side effects like changes in `User.count`.
-*   Testing error logging for unexpected exceptions.
+    ```
 
 ## 3. Development Workflow & Best Practices
 
