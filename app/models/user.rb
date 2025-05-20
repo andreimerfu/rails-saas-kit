@@ -18,6 +18,10 @@ class User < ApplicationRecord
   validates :name, presence: true, length: { maximum: 50 }
   validates :role, presence: true
 
+  def platform_admin?
+    is_admin
+  end
+
   def onboarded?
     # Check if the user has an organization associated
     # and if the organization has been created (not nil)

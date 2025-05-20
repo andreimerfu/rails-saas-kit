@@ -199,7 +199,7 @@ This project utilizes a specific stack and follows particular architectural patt
     *   Define `rollback:` operations for steps that have side effects.
     *   The main public method is `call(initial_input)`.
 *   **Return Value:** The `call` method of a `Dry::Workflow` service returns a `Dry::Monads::Result` object (`Success(value)` or `Failure(failure_payload)`).
-*   **Interaction:** Called from controllers using either pattern matching or the preferred block-based approach (see section 2.5.1 for controller integration patterns).
+*   **Interaction:** Called from controllers using either pattern matching or the preferred block-based approach (see section 2.5.2 for controller integration patterns).
 
 **Example: A `Users::Invitation` using `Dry::Workflow`**
 ```ruby
@@ -395,7 +395,60 @@ class WidgetsController < ApplicationController
     end
     ```
 
-### 2.5.1. Controller Integration with Dry::Workflow
+### 2.5.1. Nested Controllers for Organization
+*   **Purpose:** To improve organization and clarity by grouping controllers that manage different aspects of the same resource or a closely related set of functionalities under a common namespace. This helps in keeping individual controllers focused and the overall controller directory structure more manageable, especially as the application grows.
+*   **Convention & Structure:**
+    *   Create a subdirectory within `app/controllers/` named after the primary resource or functional area (e.g., `app/controllers/organizations/`).
+    *   Place related controllers within this subdirectory.
+    *   Namespace the controller classes accordingly.
+    *   **Example:**
+        *   `app/controllers/organizations/manage_controller.rb` would contain `class Organizations::ManageController < ApplicationController`.
+        *   `app/controllers/organizations/pricing_controller.rb` would contain `class Organizations::PricingController < ApplicationController`.
+        *   `app/controllers/admin/users_controller.rb` would contain `class Admin::UsersController < Admin::BaseController` (assuming an `Admin::BaseController` for admin-specific logic).
+*   **Routing (`config/routes.rb`):**
+    *   Use `namespace` for controllers that are part of a distinct section of your application, often with its own layout or authentication (e.g., an admin section). This affects URL helpers and path generation (e.g., `admin_users_path`).
+        ```ruby
+        # config/routes.rb
+        namespace :admin do
+          resources :users
+          resources :settings
+        end
+        ```
+    *   Use `scope module:` when you want to group controllers in a subdirectory for organization but don't want to change the URL helpers or routing paths significantly.
+        ```ruby
+        # config/routes.rb
+        # For controllers like Organizations::ManageController, Organizations::BillingController
+        # that operate on the :organization resource.
+        resources :organizations do
+          # member routes for specific organization actions handled by nested controllers
+          member do
+            get 'manage', to: 'organizations/manage#show' # Routes to Organizations::ManageController#show
+            # ... other manage actions ...
+          end
+
+          scope module: :organizations do # or resource :manage, controller: 'organizations/manage'
+            resource :billing, only: [:show, :update] # Routes to Organizations::BillingController
+            resource :settings, only: [:show, :edit, :update] # Routes to Organizations::SettingsController
+          end
+        end
+
+        # If you have top-level resources managed by namespaced controllers:
+        # scope module: 'settings' do
+        #   resource :profile
+        #   resource :account
+        # end
+        # This would route /profile to Settings::ProfilesController
+        ```
+*   **Benefits:**
+    *   **Improved Readability & Maintainability:** Easier to find and understand controllers related to a specific feature.
+    *   **Reduced Controller Bloat:** Prevents single controllers from becoming overly large and handling too many disparate responsibilities.
+    *   **Clearer Separation of Concerns:** Each nested controller can focus on a specific aspect of a resource.
+*   **When to Use:**
+    *   When a single resource (e.g., `Organization`, `User`, `Product`) has multiple distinct areas of management (e.g., settings, billing, members, public profile).
+    *   For admin interfaces or other distinct application sections.
+    *   When a controller starts to feel too large or its actions cover too many different sub-contexts of a resource.
+
+### 2.5.2. Controller Integration with Dry::Workflow
 
 *   **Block-Based Approach (Preferred):**
     *   Use a block-based pattern to handle workflow results, which provides a more elegant and readable way to handle different outcomes.
@@ -758,7 +811,7 @@ end
     *   Follow the existing code style.
     *   Run RuboCop (using configuration in [` .rubocop.yml`]( .rubocop.yml)) to ensure consistency.
 *   **Environment Variables:** Use `.env` for local development secrets and configuration. See `.env.example` if available.
-*   **Background Jobs:** If Sidekiq or another background job processor is introduced (check [`config/queue.yml`](config/queue.yml) or `Procfile.dev`), use it for long-running tasks (e.g., sending emails, processing webhooks asynchronously if needed, data processing).
+*   **Background Jobs (SolidQueue):** SolidQueue is the configured background job processor for this project (adapter configured in [`config/application.rb`](config/application.rb:1) and/or specific environment files like [`config/environments/development.rb`](config/environments/development.rb:1); check [`config/queue.yml`](config/queue.yml:1) for queue adapter settings, and `Procfile.dev` for the worker process definition). **It is crucial that all time-consuming tasks (e.g., sending emails, processing webhooks, generating reports, complex data manipulations, API calls to external services) MUST be offloaded to background jobs** using `ApplicationJob` (see [`app/jobs/application_job.rb`](app/jobs/application_job.rb:1)) as a base. This ensures a responsive user experience and prevents request timeouts.
 
 ## 4. Example Scenario: Adding "Projects" to an Organization
 

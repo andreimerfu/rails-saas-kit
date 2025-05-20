@@ -4,7 +4,7 @@ Rails.application.routes.draw do
   # end
 
   # Mount Solid Queue Dashboard, restricted to admins
-  authenticate :user, lambda { |u| u.is_admin? } do
+  authenticate :user, lambda { |u| u.platform_admin? } do
     mount SolidQueueDashboard::Engine, at: "/solid-queue"
   end
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
