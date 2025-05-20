@@ -1,6 +1,7 @@
 class ApplicationController < ActionController::Base
   include Rails.application.routes.url_helpers
   include Pundit::Authorization # Include Pundit
+  include ControllerLogging # Include enhanced logging
 
   helper ThemesHelper # Make theme helpers available to all controllers
 

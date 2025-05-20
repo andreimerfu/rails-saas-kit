@@ -192,23 +192,23 @@ This project utilizes a specific stack and follows particular architectural patt
 ### 2.4. Service Objects (`app/services/`) using Dry::Workflow
 *   **Purpose:** To encapsulate complex, multi-step business logic, keeping controllers and models thin. This is the **preferred pattern for new complex business logic**, especially when operations involve multiple steps or require rollbacks.
 *   **Framework:** Utilize the `dry-workflow` gem (already included in this project) to structure these service objects. `Dry::Workflow` provides a DSL for defining steps (`step`, `map`, `try`) and handling rollbacks automatically.
-*   **Location:** Create new workflow services in the `app/services/` directory, often namespaced (e.g., `app/services/users/invitation_workflow.rb`).
+*   **Location:** Create new service objects in the `app/services/` directory, often namespaced (e.g., `app/services/users/invitation.rb`).
 *   **Structure:**
     *   Include `Dry::Workflow` and `Dry::Monads[:result, :do]`.
     *   Define steps using the DSL. Each step method should return `Success(value)` or `Failure(value)`.
     *   Define `rollback:` operations for steps that have side effects.
     *   The main public method is `call(initial_input)`.
 *   **Return Value:** The `call` method of a `Dry::Workflow` service returns a `Dry::Monads::Result` object (`Success(value)` or `Failure(failure_payload)`).
-*   **Interaction:** Called from controllers. The controller then inspects the `Result` to determine the outcome.
+*   **Interaction:** Called from controllers using either pattern matching or the preferred block-based approach (see section 2.5.1 for controller integration patterns).
 
-**Example: A `Users::InvitationWorkflow` using `Dry::Workflow`**
+**Example: A `Users::Invitation` using `Dry::Workflow`**
 ```ruby
-# app/services/users/invitation_workflow.rb
+# app/services/users/invitation.rb
 require 'dry/workflow'
 require 'dry/monads/all' # For Success, Failure, and Do notation
 
 module Users
-  class InvitationWorkflow
+  class Invitation
     include Dry::Workflow
     include Dry::Monads[:result, :do] # Enable Do notation for cleaner chaining
 
@@ -263,7 +263,7 @@ module Users
         Failure(type: :invitation_failed, message: "Failed to send invitation: #{error_messages}", raw_errors: invited_user.errors)
       end
     rescue StandardError => e
-      Rails.logger.error "UserInvitationWorkflow: Invite step error - #{e.message}"
+      Rails.logger.error "Users::Invitation: Invite step error - #{e.message}"
       Failure(type: :exception, message: "An unexpected error occurred during invitation: #{e.message}")
     end
 
@@ -271,7 +271,7 @@ module Users
       # This rollback is called if 'invite_user' succeeded but a *subsequent* step failed.
       # If 'invite_user' itself failed, this rollback is NOT called.
       # 'failure_data_from_invite_user_step' here is the *Success output* of the invite_user step.
-      Rails.logger.warn "UserInvitationWorkflow: Rollback for 'invite_user' triggered. Data: #{failure_data_from_invite_user_step.inspect}"
+      Rails.logger.warn "Users::Invitation: Rollback for 'invite_user' triggered. Data: #{failure_data_from_invite_user_step.inspect}"
       # Example: If User.invite! created a pending record that needs cleanup and a later step failed.
       # User.where(email: failure_data_from_invite_user_step[:email], invitation_token: non_nil).destroy_all
     end
@@ -306,7 +306,7 @@ class OrganizationsController < ApplicationController
       email: params[:user_email], # Assuming param is :user_email from form
       organization: organization
     }
-    service_result = Users::InvitationWorkflow.new.call(workflow_input)
+    service_result = Users::Invitation.new.call(workflow_input)
 
     if service_result.success?
       # service_result.value! contains the output of the 'prepare_success_message' map step
@@ -395,7 +395,154 @@ class WidgetsController < ApplicationController
     end
     ```
 
-*   **Usage in a Controller:**
+### 2.5.1. Controller Integration with Dry::Workflow
+
+*   **Block-Based Approach (Preferred):**
+    *   Use a block-based pattern to handle workflow results, which provides a more elegant and readable way to handle different outcomes.
+    *   This approach allows for specific handling of different failure types without nested conditionals or case statements.
+    *   Define private methods for preparing workflow inputs to keep controller actions clean and focused.
+
+**Example: Block-Based Controller Pattern**
+```ruby
+# app/controllers/contacts_controller.rb
+class ContactsController < ApplicationController
+  before_action :authenticate_user!
+  before_action :set_contact, only: [:show, :edit, :update, :destroy]
+  
+  def create
+    # Call the workflow with a block that handles different outcomes
+    Contacts::Create.call(contact_params) do |on|
+      on.success { |contact| redirect_to contact, notice: "Contact was successfully created." }
+      on.failure(:validate) { |errors| render_validation_errors(errors) }
+      on.failure(:check_dupes) { |contact| handle_duplicate_contact(contact) }
+      on.failure { |error| handle_generic_error(error) } # Catch-all for other failures
+    end
+  end
+  
+  def update
+    Contacts::Update.call(update_params) do |on|
+      on.success { |contact| redirect_to contact, notice: "Contact was successfully updated." }
+      on.failure(:validate) { |errors| render_validation_errors(errors) }
+      on.failure { |error| handle_generic_error(error) }
+    end
+  end
+  
+  private
+  
+  # Use private methods to prepare workflow inputs
+  def contact_params
+    params.require(:contact).permit(:name, :email, :phone).to_h.merge(
+      user: current_user,
+      organization: current_user.organization
+    )
+  end
+  
+  def update_params
+    contact_params.merge(contact: @contact)
+  end
+  
+  # Helper methods for handling different outcomes
+  def render_validation_errors(errors)
+    @contact = Contact.new(params[:contact])
+    @errors = errors
+    render :new, status: :unprocessable_entity
+  end
+  
+  def handle_duplicate_contact(contact)
+    @contact = contact
+    @duplicate = true
+    flash.now[:alert] = "A similar contact may already exist."
+    render :new, status: :unprocessable_entity
+  end
+  
+  def handle_generic_error(error)
+    Rails.logger.error "Contact creation failed: #{error.inspect}"
+    redirect_to contacts_path, alert: "An error occurred while processing your request."
+  end
+end
+```
+
+**Implementing the Block Handler in Workflows:**
+
+To support this pattern, extend your workflow classes with a block handler:
+
+```ruby
+# app/services/application_service.rb
+module ApplicationService
+  extend ActiveSupport::Concern
+  
+  included do
+    include Dry::Workflow
+    include Dry::Monads[:result, :do]
+    include ServiceLogging
+    
+    # Add class method to handle blocks
+    def self.call(*args, &block)
+      result = new.call(*args)
+      
+      if block_given?
+        BlockHandler.new(result).handle(&block)
+      else
+        result
+      end
+    end
+  end
+  
+  # Block handler class
+  class BlockHandler
+    def initialize(result)
+      @result = result
+    end
+    
+    def handle
+      handler = yield self
+      
+      case @result
+      when Dry::Monads::Success
+        handler.call(@result.value!) if handler
+      when Dry::Monads::Failure
+        handler.call(@result.failure)
+      end
+      
+      @result
+    end
+    
+    def success(&block)
+      return unless @result.success?
+      block
+    end
+    
+    def failure(type = nil, &block)
+      return unless @result.failure?
+      
+      if type.nil? || (@result.failure.is_a?(Hash) && @result.failure[:type] == type)
+        block
+      end
+    end
+  end
+end
+```
+
+*   **Usage in Service Classes:**
+    ```ruby
+    # app/services/contacts/create.rb
+    module Contacts
+      class Create
+        include ApplicationService
+        
+        step :validate
+        step :check_dupes
+        step :save_contact
+        map :prepare_response
+        
+        private
+        
+        # Implementation of steps...
+      end
+    end
+    ```
+
+*   **Alternative: Pattern Matching Approach:**
     ```ruby
     # app/controllers/invitations_controller.rb (example)
     def create
@@ -427,7 +574,9 @@ class WidgetsController < ApplicationController
     end
     ```
 
-*   **RSpec Test Example:**
+*   **RSpec Test Examples:**
+    
+    **Testing the Service:**
     ```ruby
     # spec/services/user/invite_spec.rb
     require 'rails_helper'
@@ -512,6 +661,83 @@ class WidgetsController < ApplicationController
             expect(result).to be_failure
             expect(result.failure[:type]).to eq(:active_record_error)
             expect(result.failure[:error]).to be_an_instance_of(ActiveRecord::RecordInvalid)
+          end
+        end
+      end
+    end
+    ```
+
+    **Testing a Controller with Block-Based Approach:**
+    ```ruby
+    # spec/controllers/contacts_controller_spec.rb
+    require 'rails_helper'
+
+    RSpec.describe ContactsController, type: :controller do
+      let(:user) { create(:user) }
+      let(:valid_attributes) { attributes_for(:contact) }
+      let(:invalid_attributes) { attributes_for(:contact, email: '') }
+      
+      before do
+        sign_in user # Assuming Devise for authentication
+      end
+      
+      describe "POST #create" do
+        context "with valid parameters" do
+          it "creates a new contact and redirects to the contact" do
+            # Stub the service to return a success result
+            contact = build_stubbed(:contact)
+            allow(Contacts::Create).to receive(:call).and_yield(
+              double(
+                success: ->(block) { block.call(contact) },
+                failure: ->(_, &_) { nil }
+              )
+            ).and_return(Dry::Monads::Success(contact))
+            
+            post :create, params: { contact: valid_attributes }
+            
+            expect(Contacts::Create).to have_received(:call)
+            expect(response).to redirect_to(contact)
+            expect(flash[:notice]).to eq("Contact was successfully created.")
+          end
+        end
+        
+        context "with validation errors" do
+          it "renders the new template with errors" do
+            # Stub the service to return a validation failure
+            errors = { email: ["can't be blank"] }
+            allow(Contacts::Create).to receive(:call).and_yield(
+              double(
+                success: ->(_) { nil },
+                failure: ->(type, &block) { block.call(errors) if type == :validate }
+              )
+            ).and_return(Dry::Monads::Failure(type: :validate, errors: errors))
+            
+            post :create, params: { contact: invalid_attributes }
+            
+            expect(Contacts::Create).to have_received(:call)
+            expect(response).to render_template(:new)
+            expect(response).to have_http_status(:unprocessable_entity)
+            expect(assigns(:errors)).to eq(errors)
+          end
+        end
+        
+        context "with duplicate contact" do
+          it "renders the new template with duplicate warning" do
+            # Stub the service to return a duplicate failure
+            duplicate_contact = build_stubbed(:contact)
+            allow(Contacts::Create).to receive(:call).and_yield(
+              double(
+                success: ->(_) { nil },
+                failure: ->(type, &block) { block.call(duplicate_contact) if type == :check_dupes }
+              )
+            ).and_return(Dry::Monads::Failure(type: :check_dupes, contact: duplicate_contact))
+            
+            post :create, params: { contact: valid_attributes }
+            
+            expect(Contacts::Create).to have_received(:call)
+            expect(response).to render_template(:new)
+            expect(assigns(:duplicate)).to be true
+            expect(flash.now[:alert]).to eq("A similar contact may already exist.")
           end
         end
       end

@@ -114,3 +114,8 @@ gem "stripe-rails"
 gem "pundit"
 
 gem "jsonb_accessor"
+
+# Logging
+gem "amazing_print"          # Colorful object inspection for development
+gem "semantic_logger"        # Structured logging with multiple formats
+gem "rails_semantic_logger"  # Rails integration for semantic_logger
