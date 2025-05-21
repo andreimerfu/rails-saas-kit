@@ -37,7 +37,7 @@
       <% card.with_body do %>
         <p class="text-sm text-base-content/70 mb-4">Manage your organization's subscription and billing details.</p>
         <div class="card-actions justify-start">
-          <%= link_to "View Pricing & Plans", organization_pricing_path(@organization), class: "btn btn-accent" %>
+          <%= link_to "View Pricing & Plans", organization_pricing_path, class: "btn btn-accent" %>
         </div>
       <% end %>
     <% end %>
@@ -47,7 +47,7 @@
   <%= render UI::CardComponent.new(title: "Invite New Member") do |card| %>
     <% card.with_body do %>
       <p class="text-sm text-base-content/70 mb-4">Invite a new member to join <%= @organization.name %>.</p>
-      <%= simple_form_for :invitation, url: invite_organization_path, html: { class: "space-y-4", data: { turbo: true } } do |f| %>
+      <%= simple_form_for :user, url: organization_organization_invitations_path, html: { class: "space-y-4", data: { turbo: true } } do |f| %>
         <%# Devise Invitable doesn't typically show errors on this form directly, but handles them via controller flashes. %>
         <%# If you have custom error handling for invitations, you can add it here. %>
         
@@ -94,10 +94,19 @@
                   <td><span class="badge badge-ghost badge-sm"><%= member.role.humanize %></span></td>
                   <td><%= time_ago_in_words(member.created_at) %> ago</td>
                   <td>
-                    <%# Add actions like "Remove" or "Change Role" here if applicable %>
-                    <%# Example: %>
-                    <%#= link_to "Edit", '#', class: "btn btn-xs btn-ghost" %>
-                    <%#= link_to "Remove", '#', class: "btn btn-xs btn-error btn-ghost", data: { turbo_method: :delete, turbo_confirm: "Are you sure?" } %>
+                    <% if member != current_user && policy(@organization).remove_member? %>
+                      <%= link_to "Remove", organization_organization_member_path(member),
+                                  data: { turbo_method: :delete, turbo_confirm: "Are you sure you want to remove #{member.email} from the organization? This will delete their account." },
+                                  class: "btn btn-xs btn-error btn-ghost" %>
+                    <% else %>
+                      <span class="text-xs text-base-content/50">
+                        <% if member == current_user %>
+                          (Yourself)
+                        <% else %>
+                          (Not authorized)
+                        <% end %>
+                      </span>
+                    <% end %>
                   </td>
                 </tr>
               <% end %>

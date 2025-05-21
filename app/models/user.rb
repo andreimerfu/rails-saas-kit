@@ -4,7 +4,7 @@ class User < ApplicationRecord
   # Include default devise modules. Others available are:
   # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
   has_many :notifications, as: :recipient, dependent: :destroy, class_name: "Noticed::Notification"
-  devise :invitable, :database_authenticatable, :registerable,
+  devise :confirmable, :invitable, :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable, :omniauthable,
          omniauth_providers: [ :github, :google_oauth2, :microsoft_entra_id ],
          authentication_keys: [ :email ]
@@ -20,6 +20,10 @@ class User < ApplicationRecord
 
   def platform_admin?
     is_admin
+  end
+
+  def platform_admin!
+    update!(is_admin: true)
   end
 
   def onboarded?

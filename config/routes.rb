@@ -11,6 +11,10 @@ Rails.application.routes.draw do
   # Can be used by load balancers and uptime monitors to verify that the app is live.
   get "up" => "rails/health#show", as: :rails_health_check
 
+  if Rails.env.development?
+    mount LetterOpenerWeb::Engine, at: "/letter_opener"
+  end
+
   # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)
   get "manifest.json" => "rails/pwa#manifest", as: :pwa_manifest
   get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
@@ -42,16 +46,35 @@ Rails.application.routes.draw do
   end
 
   # Organization management routes
-  get "/organization/manage", to: "organizations#manage", as: :manage_organization
-  patch "/organization/manage", to: "organizations#update"
-  post "/organization/invite", to: "organizations#invite", as: :invite_organization
-  get "/organization/pricing", to: "organizations#pricing", as: :organization_pricing
+  # Refactored to use singular resource and nested controllers
+  resource :organization, only: [ :update ], controller: "organizations" do
+    get :manage, on: :member # GET /organization/manage (maps to OrganizationsController#manage)
+    # :member here is a bit of a misnomer for singular resources,
+    # it creates /organization/manage.
+    # If you prefer /manage_organization, use `get :manage` outside `resource`.
+
+    # Nested controllers for specific organization functionalities
+    scope module: :organizations do
+      # POST /organization/invitations (maps to Organizations::InvitationsController#create)
+      resources :invitations, only: [ :create ], as: :organization_invitations
+      # GET /organization/pricing (maps to Organizations::PricingsController#show)
+      resource :pricing, only: [ :show ] # Default helper: organization_pricing_path
+      # DELETE /organization/members/:id (maps to Organizations::MembersController#destroy)
+      resources :members, only: [ :destroy ], as: :organization_members
+    end
+  end
+  # Old direct routes are replaced by the resource block above.
+  # get "/organization/manage", to: "organizations#manage", as: :manage_organization
+  # patch "/organization/manage", to: "organizations#update" # Covered by resource :organization, only: [:update]
+  # post "/organization/invite", to: "organizations#invite", as: :invite_organization # Covered by nested invitations
+  # get "/organization/pricing", to: "organizations#pricing", as: :organization_pricing # Covered by nested pricing
 
   # Route for creating a Stripe Checkout session for a subscription
   get "subscriptions/checkout_session", to: "subscriptions#new_checkout_session", as: :new_subscription_checkout_session
 
-  get "/invitation/accept", to: "invitations#edit", as: :accept_invitation
-  resource :invitation, only: [ :update ], controller: "invitations"
+  # Routes for accepting and updating invitations (now under organizations namespace)
+  get "/invitation/accept", to: "organizations/invitations#edit", as: :accept_invitation
+  resource :invitation, only: [ :update ], controller: "organizations/invitations"
 
   # Custom payment routes have been removed to use stripe-rails gem features.
 

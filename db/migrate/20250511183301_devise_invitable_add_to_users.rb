@@ -10,6 +10,7 @@ class DeviseInvitableAddToUsers < ActiveRecord::Migration[8.0]
       t.integer    :invitations_count, default: 0
       t.index      :invitation_token, unique: true # for invitable
       t.index      :invited_by_id
+      t.confirmable
     end
   end
 
