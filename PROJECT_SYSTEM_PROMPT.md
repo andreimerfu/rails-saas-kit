@@ -454,8 +454,9 @@ class WidgetsController < ApplicationController
     *   Use a block-based pattern to handle workflow results, which provides a more elegant and readable way to handle different outcomes.
     *   This approach allows for specific handling of different failure types without nested conditionals or case statements.
     *   Define private methods for preparing workflow inputs to keep controller actions clean and focused.
+    *   **Concise Failure Handling:** When multiple failure types result in similar actions (e.g., redirecting with a message from the failure payload), you can use a single `on.failure` block without a specific type, provided the failure payload consistently includes the necessary information (like a `:message` key). Prefer single-line blocks (`{ ... }`) for brevity in such cases.
 
-**Example: Block-Based Controller Pattern**
+**Example: Block-Based Controller Pattern (Standard and Concise Failure Handling)**
 ```ruby
 # app/controllers/contacts_controller.rb
 class ContactsController < ApplicationController
@@ -466,37 +467,59 @@ class ContactsController < ApplicationController
     # Call the workflow with a block that handles different outcomes
     Contacts::Create.call(contact_params) do |on|
       on.success { |contact| redirect_to contact, notice: "Contact was successfully created." }
+      # Detailed failure handling:
       on.failure(:validate) { |errors| render_validation_errors(errors) }
       on.failure(:check_dupes) { |contact| handle_duplicate_contact(contact) }
-      on.failure { |error| handle_generic_error(error) } # Catch-all for other failures
+      on.failure { |error| handle_generic_error(error) } # Catch-all for other specific failures
     end
   end
   
   def update
-    Contacts::Update.call(update_params) do |on|
-      on.success { |contact| redirect_to contact, notice: "Contact was successfully updated." }
-      on.failure(:validate) { |errors| render_validation_errors(errors) }
-      on.failure { |error| handle_generic_error(error) }
+    # Example with concise failure handling if all failures redirect with a message
+    # This assumes the service object consistently returns a failure payload like { type: :some_error, message: "Error details" }
+    # or simply { message: "Error details" } for the generic failure.
+    Users::Invitation.call(invite_params) do |on| # Assuming invite_params is defined
+      on.success { |payload| redirect_to success_path, notice: payload[:message] } # Use { } for single line
+      # Concise failure handling:
+      on.failure { |failure_payload| redirect_to failure_path, alert: "Operation failed: #{failure_payload[:message]}" }
     end
   end
+
+  # Example of a more verbose update action if needed for distinct failure types
+  # def update
+  #   Contacts::Update.call(update_params) do |on|
+  #     on.success { |contact| redirect_to contact, notice: "Contact was successfully updated." }
+  #     on.failure(:validate) { |errors| render_validation_errors(errors) }
+  #     on.failure { |error| handle_generic_error(error) }
+  #   end
+  # end
   
   private
   
   # Use private methods to prepare workflow inputs
-  def contact_params
+  def contact_params # For Contacts::Create example
     params.require(:contact).permit(:name, :email, :phone).to_h.merge(
       user: current_user,
       organization: current_user.organization
     )
   end
+
+  def invite_params # For Users::Invitation example
+    # Define how invite_params are sourced, e.g.:
+    # params.require(:invitation).permit(:email).to_h.merge(
+    #   inviter: current_user,
+    #   organization: current_user.organization
+    # )
+    {} # Placeholder
+  end
   
-  def update_params
+  def update_params # For Contacts::Update example (if used)
     contact_params.merge(contact: @contact)
   end
   
-  # Helper methods for handling different outcomes
+  # Helper methods for handling different outcomes (for Contacts::Create example)
   def render_validation_errors(errors)
-    @contact = Contact.new(params[:contact])
+    @contact = Contact.new(params.fetch(:contact, {}).permit(:name, :email, :phone)) # Ensure params are safely fetched
     @errors = errors
     render :new, status: :unprocessable_entity
   end
@@ -508,7 +531,7 @@ class ContactsController < ApplicationController
     render :new, status: :unprocessable_entity
   end
   
-  def handle_generic_error(error)
+  def handle_generic_error(error) # For Contacts::Create example
     Rails.logger.error "Contact creation failed: #{error.inspect}"
     redirect_to contacts_path, alert: "An error occurred while processing your request."
   end
@@ -808,8 +831,30 @@ end
     *   Be mindful of Pundit authorization to prevent unauthorized access.
     *   Rails handles CSRF, XSS protection by default, but be aware.
 *   **Code Style:**
-    *   Follow the existing code style.
-    *   Run RuboCop (using configuration in [` .rubocop.yml`]( .rubocop.yml)) to ensure consistency.
+    *   **RuboCop:** Adhere to the project's RuboCop configuration (see [` .rubocop.yml`]( .rubocop.yml)). Run `bundle exec rubocop` to check for violations.
+    *   **Readability:** Prioritize clear, readable, and self-documenting code.
+    *   **Rails Conventions:**
+        *   **Base Classes:** Inherit from standard base classes:
+            *   Models: `ApplicationRecord` (e.g., `class User < ApplicationRecord`)
+            *   Controllers: `ApplicationController` (e.g., `class UsersController < ApplicationController`) or a relevant namespaced base controller (e.g., `Admin::BaseController`).
+            *   Jobs: `ApplicationJob` (e.g., `class ProcessPaymentJob < ApplicationJob`)
+            *   Mailers: `ApplicationMailer` (e.g., `class UserMailer < ApplicationMailer`)
+            *   Services: `ApplicationService` (e.g., `class UserCreatorService < ApplicationService`) if a base service class is established (as seen in [`app/services/application_service.rb`](app/services/application_service.rb:1)).
+            *   Components: `ApplicationComponent` or `ViewComponent::Base` (e.g., `class UserAvatarComponent < ApplicationComponent`)
+        *   **Predicate Methods:** Methods that return a boolean should end with a question mark (e.g., `user.admin?`, `order.shipped?`).
+        *   **Use `presence` and `present?`:** Prefer `object.present?` over `!object.blank?` or `!object.nil? && !object.empty?`. Use `object.presence || default_value`.
+        *   **Hash Syntax:** Use Ruby 1.9+ hash syntax (`key: value`) over hash rockets (`:key => value`) unless string keys or non-symbol keys are necessary.
+        *   **Scope Usage:** Define scopes in models for common queries.
+            ```ruby
+            # app/models/article.rb
+            scope :published, -> { where.not(published_at: nil).where("published_at <= ?", Time.current) }
+            scope :recent, ->(limit = 5) { order(created_at: :desc).limit(limit) }
+            ```
+        *   **Fat Models, Thin Controllers:** Business logic should reside primarily in models or Service Objects, not controllers.
+        *   **Service Objects for Complex Logic:** As detailed in section 2.4, use Service Objects for multi-step operations or complex business rules.
+        *   **Constants:** Use uppercase for constants (e.g., `DEFAULT_ROLE = "user"`).
+        *   **Private Methods:** Clearly separate public interface from internal implementation details using `private`. Group private methods at the bottom of the class.
+    *   **Follow the existing code style:** When in doubt, look at existing, well-written parts of the codebase for guidance.
 *   **Environment Variables:** Use `.env` for local development secrets and configuration. See `.env.example` if available.
 *   **Background Jobs (SolidQueue):** SolidQueue is the configured background job processor for this project (adapter configured in [`config/application.rb`](config/application.rb:1) and/or specific environment files like [`config/environments/development.rb`](config/environments/development.rb:1); check [`config/queue.yml`](config/queue.yml:1) for queue adapter settings, and `Procfile.dev` for the worker process definition). **It is crucial that all time-consuming tasks (e.g., sending emails, processing webhooks, generating reports, complex data manipulations, API calls to external services) MUST be offloaded to background jobs** using `ApplicationJob` (see [`app/jobs/application_job.rb`](app/jobs/application_job.rb:1)) as a base. This ensures a responsive user experience and prevents request timeouts.
 
