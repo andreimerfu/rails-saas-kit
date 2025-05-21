@@ -44,6 +44,10 @@ class ApplicationController < ActionController::Base
     devise_controller? || controller_name == "onboarding"
   end
 
+  def current_organization
+    current_user.organization
+  end
+
   def set_organization_as_tenant
     organization_to_set = nil
     if current_user&.organization_id?

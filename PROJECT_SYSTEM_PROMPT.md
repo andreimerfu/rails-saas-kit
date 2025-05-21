@@ -331,6 +331,8 @@ end
     *   Delegate business logic to Service Objects or directly to models for simple CRUD.
     *   Set up minimal instance variables for the view.
     *   Redirect or render the appropriate response.
+    *   Utilize `current_organization` (typically defined in [`ApplicationController`](app/controllers/application_controller.rb:1)) for organization-scoped actions.
+    *   Aim for controller actions to be no more than 10 lines long. Extract logic into private helper methods or Service Objects to maintain brevity and clarity.
 *   **Keep actions short and focused.** The [`DashboardController`](app/controllers/dashboard_controller.rb) is a good example.
 
 **Example: A controller action using a Service Object**
