@@ -30,4 +30,9 @@ class UserPolicy < ApplicationPolicy
   def admin?
     user.admin?
   end
+
+  # Can the user invite members to their organization?
+  def invite_member?
+    user.is_owner_or_admin?
+  end
 end

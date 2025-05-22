@@ -1,43 +1,15 @@
 class Organizations::InvitationsController < ApplicationController
   layout "devise" # Use the devise layout for invitation acceptance forms
 
-  before_action :authenticate_user!, only: [ :create, :update ] # Authenticate for creation and password setting
+  before_action :authenticate_user!, only: [ :create ] # Authenticate for creation
+  after_action :verify_authorized, only: [ :create ]
 
   def create
-    # Ensure current_user and their organization are present
-    unless current_user&.organization
-      redirect_to root_path, alert: "Authentication error or organization not found."
-      return
-    end
+    authorize current_user, :invite_member?
 
     Users::Invitation.call(invite_params) do |on|
-      on.success do |payload|
-        redirect_to manage_organization_path, notice: payload[:message]
-      end
-
-      on.failure(:validation) do |failure_payload|
-        # Construct a more user-friendly message from validation errors if possible
-        error_message = if failure_payload[:errors].is_a?(Hash)
-                          failure_payload[:errors].map { |field, messages| "#{field.to_s.humanize} #{messages.join(', ')}" }.join("; ")
-        else
-                          failure_payload[:message]
-        end
-        redirect_to manage_organization_path, alert: "Validation failed: #{error_message}"
-      end
-
-      on.failure(:conflict) do |failure_payload|
-        redirect_to manage_organization_path, alert: "Could not invite user: #{failure_payload[:message]}"
-      end
-
-      on.failure(:invitation_failed) do |failure_payload|
-        redirect_to manage_organization_path, alert: "Failed to send invitation: #{failure_payload[:message]}"
-      end
-
-      on.failure do |failure_payload| # Catch-all for other failure types
-        Rails.logger.error "User Invitation Failure: #{failure_payload.inspect}"
-        alert_message = failure_payload.is_a?(Hash) && failure_payload[:message] ? failure_payload[:message] : "An unexpected error occurred while sending the invitation."
-        redirect_to manage_organization_path, alert: alert_message
-      end
+      on.success { |payload| redirect_to manage_organization_path, notice: payload[:message] }
+      on.failure { |failure_payload| redirect_to manage_organization_path, alert: failure_payload[:message] }
     end
   end
 

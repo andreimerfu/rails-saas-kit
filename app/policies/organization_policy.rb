@@ -45,6 +45,14 @@ class OrganizationPolicy < ApplicationPolicy
     user.admin? || (user.organization == record && user.role == "owner")
   end
 
+  # Can the current user invite members to this organization?
+  def invite_member?
+    return false unless user.present? && record.present? # record is the organization
+
+    # User must be an admin or an owner of the organization (record)
+    user.admin? || (user.organization == record && user.role == "owner")
+  end
+
   class Scope < Scope
     def resolve
       if user.admin?

@@ -17,13 +17,13 @@ module Users
       organization = payload[:organization]
 
       if email.blank?
-        return Failure(type: :validation, field: :email, message: "Email cannot be blank.")
+        return Failure(type: :validation, field: :email, message: "Validation failed: Email cannot be blank.")
       end
       unless email =~ URI::MailTo::EMAIL_REGEXP
-        return Failure(type: :validation, field: :email, message: "Invalid email format.")
+        return Failure(type: :validation, field: :email, message: "Validation failed: Invalid email format.")
       end
       unless inviter.is_a?(User) && organization.is_a?(Organization)
-        return Failure(type: :validation, message: "Inviter must be a User and Organization must be an Organization.")
+        return Failure(type: :validation, message: "Validation failed: Inviter must be a User and Organization must be an Organization.")
       end
       # Pass the original payload through, ensuring all data is carried forward.
       # Dry::Workflow merges the Success payload with the current state.
@@ -37,9 +37,9 @@ module Users
       existing_user = User.find_by(email: email)
       if existing_user
         if existing_user.organization_id == organization.id
-          return Failure(type: :conflict, message: "#{email} is already a member of this organization.")
+          return Failure(type: :conflict, message: "Could not invite user: #{email} is already a member of this organization.")
         else
-          return Failure(type: :conflict, message: "#{email} is already associated with a different organization.")
+          return Failure(type: :conflict, message: "Could not invite user: #{email} is already associated with a different organization.")
         end
       end
       Success(payload)

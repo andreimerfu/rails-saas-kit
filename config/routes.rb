@@ -63,12 +63,6 @@ Rails.application.routes.draw do
       resources :members, only: [ :destroy ], as: :organization_members
     end
   end
-  # Old direct routes are replaced by the resource block above.
-  # get "/organization/manage", to: "organizations#manage", as: :manage_organization
-  # patch "/organization/manage", to: "organizations#update" # Covered by resource :organization, only: [:update]
-  # post "/organization/invite", to: "organizations#invite", as: :invite_organization # Covered by nested invitations
-  # get "/organization/pricing", to: "organizations#pricing", as: :organization_pricing # Covered by nested pricing
-
   # Route for creating a Stripe Checkout session for a subscription
   get "subscriptions/checkout_session", to: "subscriptions#new_checkout_session", as: :new_subscription_checkout_session
 
@@ -76,17 +70,8 @@ Rails.application.routes.draw do
   get "/invitation/accept", to: "organizations/invitations#edit", as: :accept_invitation
   resource :invitation, only: [ :update ], controller: "organizations/invitations"
 
-  # Custom payment routes have been removed to use stripe-rails gem features.
-
   resources :notifications, only: [ :index ] do
     patch :mark_as_read, on: :member
     patch :mark_all_as_read, on: :collection
   end
-
-  # If you still need a very generic root_path for contexts outside of devise_scope's authenticated/unauthenticated,
-  # and it should point to the login page, you might need one here.
-  # However, the devise_scope structure above should make root_path contextually correct.
-  # If `root_path` is still an issue in `_minimal_header.html.erb`, consider changing it to `unauthenticated_root_path`
-  # as that partial is primarily for unauthenticated contexts.
-  # For now, relying on the devise_scope to set root_path correctly.
 end

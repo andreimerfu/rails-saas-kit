@@ -263,7 +263,7 @@ module Users
         Failure(type: :invitation_failed, message: "Failed to send invitation: #{error_messages}", raw_errors: invited_user.errors)
       end
     rescue StandardError => e
-      Rails.logger.error "Users::Invitation: Invite step error - #{e.message}"
+      # Rails.logger.error "Users::Invitation: Invite step error - #{e.message}" # ServiceLogging concern should handle this
       Failure(type: :exception, message: "An unexpected error occurred during invitation: #{e.message}")
     end
 
@@ -271,7 +271,7 @@ module Users
       # This rollback is called if 'invite_user' succeeded but a *subsequent* step failed.
       # If 'invite_user' itself failed, this rollback is NOT called.
       # 'failure_data_from_invite_user_step' here is the *Success output* of the invite_user step.
-      Rails.logger.warn "Users::Invitation: Rollback for 'invite_user' triggered. Data: #{failure_data_from_invite_user_step.inspect}"
+      # Rails.logger.warn "Users::Invitation: Rollback for 'invite_user' triggered. Data: #{failure_data_from_invite_user_step.inspect}" # ServiceLogging may cover this or it's an example of specific detail.
       # Example: If User.invite! created a pending record that needs cleanup and a later step failed.
       # User.where(email: failure_data_from_invite_user_step[:email], invitation_token: non_nil).destroy_all
     end
@@ -534,7 +534,7 @@ class ContactsController < ApplicationController
   end
   
   def handle_generic_error(error) # For Contacts::Create example
-    Rails.logger.error "Contact creation failed: #{error.inspect}"
+    # Rails.logger.error "Contact creation failed: #{error.inspect}" # Prefer structured logging or keep minimal.
     redirect_to contacts_path, alert: "An error occurred while processing your request."
   end
 end
@@ -643,10 +643,10 @@ end
       in Failure(type: :user_exists_in_org, message: msg)
         redirect_to new_invitation_path, alert: msg
       in Failure(type: :active_record_error, error: ar_error) # From 'try' step
-        Rails.logger.error "User::Invite failed during DB operation: #{ar_error.message}"
+        # Rails.logger.error "User::Invite failed during DB operation: #{ar_error.message}" # Prefer structured logging.
         redirect_to new_invitation_path, alert: "Could not save invitation: #{ar_error.record.errors.full_messages.to_sentence}"
       in Failure(error_payload) # Catch-all for other failures
-        Rails.logger.error "User::Invite unexpected failure: #{error_payload.inspect}"
+        # Rails.logger.error "User::Invite unexpected failure: #{error_payload.inspect}" # Prefer structured logging.
         redirect_to new_invitation_path, alert: "An unexpected error occurred while sending the invitation."
       end
     end
@@ -835,6 +835,7 @@ end
 *   **Code Style:**
     *   **RuboCop:** Adhere to the project's RuboCop configuration (see [` .rubocop.yml`]( .rubocop.yml)). Run `bundle exec rubocop` to check for violations.
     *   **Readability:** Prioritize clear, readable, and self-documenting code.
+*   **Logging:** Rely on the `ServiceLogging` concern (included in `ApplicationService`) for standardized logging in service objects. Avoid adding ad-hoc `Rails.logger.debug`, `Rails.logger.info`, etc., calls within service steps or other business logic. If an example in this prompt *must* illustrate a specific logging point not covered by `ServiceLogging`, it will be explicitly noted. For controller-level logging, consider using concerns like `ControllerLogging` if available, or keep it minimal. The goal is to have centralized and configurable logging rather than scattered logger statements.
     *   **Rails Conventions:**
         *   **Base Classes:** Inherit from standard base classes:
             *   Models: `ApplicationRecord` (e.g., `class User < ApplicationRecord`)
