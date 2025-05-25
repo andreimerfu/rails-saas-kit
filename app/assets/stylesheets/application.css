@@ -236,3 +236,19 @@
 .chart-placeholder {
   @apply bg-gradient-to-br from-base-200/30 to-base-300/30 border-2 border-dashed border-base-300 rounded-xl;
 }
+
+/* Activity item icons - ensure perfect centering */
+.activity-item .avatar .rounded-full {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+}
+
+.activity-item .avatar .rounded-full svg {
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  display: block !important;
+}

@@ -37,8 +37,8 @@
         </div>
         <div class="grid grid-cols-2 gap-2">
           <% navigation_items[:quick_actions].each do |action| %>
-            <%= link_to action[:path], class: "btn btn-#{action[:style]} btn-sm gap-2 justify-start quick-action-btn" do %>
-              <%= icon action[:icon], class: "w-4 h-4" %>
+            <%= link_to action[:path], class: "btn btn-#{action[:style]} btn-sm gap-2 justify-start items-center quick-action-btn" do %>
+              <%= icon action[:icon], class: "w-4 h-4 flex-shrink-0" %>
               <span class="text-xs"><%= action[:label] %></span>
             <% end %>
           <% end %>
@@ -54,10 +54,10 @@
           <div class="relative">
             <%= link_to item[:path],
                 class: "group flex items-center gap-3 px-3 py-3 rounded-xl #{active_link?(item[:path]) ? 'nav-item-active' : 'nav-item-hover'}" do %>
-              <div class="relative">
+              <div class="relative flex items-center justify-center w-5 h-5">
                 <%= icon item[:icon], class: "w-5 h-5 transition-transform #{active_link?(item[:path]) ? 'text-primary-content' : 'text-base-content/70 group-hover:text-primary group-hover:scale-110'}" %>
                 <% if item[:badge] %>
-                  <span class="absolute -top-2 -right-2 badge badge-sm badge-error text-xs"><%= item[:badge] %></span>
+                  <span class="absolute -top-2 -right-2 badge badge-xs badge-error text-xs min-h-4 h-4 px-1"><%= item[:badge] %></span>
                 <% end %>
               </div>
               <div class="flex-1 min-w-0">
@@ -84,7 +84,9 @@
         <% navigation_items[:workspace].each do |item| %>
           <%= link_to item[:path],
               class: "group flex items-center gap-3 px-3 py-2.5 rounded-lg #{active_link?(item[:path]) ? 'bg-primary/10 text-primary border-l-4 border-primary' : 'nav-item-hover'}" do %>
-            <%= icon item[:icon], class: "w-4 h-4 transition-colors #{active_link?(item[:path]) ? 'text-primary' : 'text-base-content/60 group-hover:text-primary'}" %>
+            <div class="flex items-center justify-center w-4 h-4">
+              <%= icon item[:icon], class: "w-4 h-4 transition-colors #{active_link?(item[:path]) ? 'text-primary' : 'text-base-content/60 group-hover:text-primary'}" %>
+            </div>
             <div class="flex-1 min-w-0">
               <p class="font-medium text-sm <%= active_link?(item[:path]) ? 'text-primary' : 'text-base-content group-hover:text-base-content' %>">
                 <%= item[:label] %>

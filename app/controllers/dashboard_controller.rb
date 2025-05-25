@@ -18,7 +18,8 @@ class DashboardController < ApplicationController
       },
       recent_activities: fetch_recent_activities,
       team_status: fetch_team_status,
-      notifications: fetch_notifications
+      notifications: fetch_notifications,
+      performance_chart_data: generate_performance_chart_data
     }
   end
 
@@ -121,5 +122,17 @@ class DashboardController < ApplicationController
         icon: "exclamation-triangle"
       }
     ]
+  end
+
+  def generate_performance_chart_data
+    # Placeholder for actual chart data generation
+    {
+      "Jan" => 120,
+      "Feb" => 200,
+      "Mar" => 150,
+      "Apr" => 300,
+      "May" => 280,
+      "Jun" => 400
+    }
   end
 end

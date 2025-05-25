@@ -46,7 +46,7 @@
               <span class="text-sm text-green-600 font-medium">+2 this month</span>
             </div>
           </div>
-          <div class="p-3 bg-blue-500 rounded-xl">
+          <div class="p-3 bg-blue-500 rounded-xl flex items-center justify-center">
             <%= icon "user-group", class: "w-8 h-8 text-white" %>
           </div>
         </div>
@@ -65,7 +65,7 @@
               <span class="text-sm text-green-600 font-medium">3 completed</span>
             </div>
           </div>
-          <div class="p-3 bg-emerald-500 rounded-xl">
+          <div class="p-3 bg-emerald-500 rounded-xl flex items-center justify-center">
             <%= icon "folder", class: "w-8 h-8 text-white" %>
           </div>
         </div>
@@ -84,7 +84,7 @@
               <span class="text-sm text-green-600 font-medium">+12% from last month</span>
             </div>
           </div>
-          <div class="p-3 bg-violet-500 rounded-xl">
+          <div class="p-3 bg-violet-500 rounded-xl flex items-center justify-center">
             <%= icon "currency-dollar", class: "w-8 h-8 text-white" %>
           </div>
         </div>
@@ -103,7 +103,7 @@
               <span class="text-sm text-green-600 font-medium">Above target</span>
             </div>
           </div>
-          <div class="p-3 bg-amber-500 rounded-xl">
+          <div class="p-3 bg-amber-500 rounded-xl flex items-center justify-center">
             <%= icon "chart-bar", class: "w-8 h-8 text-white" %>
           </div>
         </div>
@@ -131,12 +131,44 @@
             </div>
           </div>
           
-          <div class="h-80 flex items-center justify-center chart-placeholder">
-            <div class="text-center">
-              <%= icon "presentation-chart-line", class: "w-16 h-16 text-base-content/20 mx-auto mb-4" %>
-              <p class="text-base-content/60 font-medium">Chart placeholder</p>
-              <p class="text-base-content/40 text-sm">Connect your analytics to see data</p>
-            </div>
+          <div class="h-80">
+            <%= line_chart @dashboard_data[:performance_chart_data],
+                  title: "Monthly Signups",
+                  ytitle: "Signups",
+                  height: "320px", # h-80 is 320px
+                  colors: ["#570df8"], # Primary color
+                  library: {
+                    chart: {
+                      backgroundColor: 'transparent'
+                    },
+                    xAxis: {
+                      labels: {
+                        style: {
+                          color: 'hsl(var(--bc) / 0.7)'
+                        }
+                      }
+                    },
+                    yAxis: {
+                      labels: {
+                        style: {
+                          color: 'hsl(var(--bc) / 0.7)'
+                        }
+                      },
+                      gridLineColor: 'hsl(var(--b2))'
+                    },
+                    legend: {
+                      itemStyle: {
+                        color: 'hsl(var(--bc) / 0.9)'
+                      }
+                    },
+                    tooltip: {
+                      backgroundColor: 'hsl(var(--b1))',
+                      borderColor: 'hsl(var(--b3))',
+                      style: {
+                        color: 'hsl(var(--bc))'
+                      }
+                    }
+                  } %>
           </div>
         </div>
       </div>
@@ -152,8 +184,8 @@
           <div class="space-y-4">
             <div class="flex items-center gap-4 p-3 bg-base-200/30 rounded-lg activity-item">
               <div class="avatar placeholder">
-                <div class="bg-success text-success-content rounded-full w-10">
-                  <%= icon "check", class: "w-5 h-5" %>
+                <div class="bg-success text-success-content rounded-full w-10 h-10 flex items-center justify-center shrink-0" style="display: flex; align-items: center; justify-content: center;">
+                  <%= icon "check", class: "w-4 h-4 flex-shrink-0", style: "display: block;", width: "16px", height: "16px" %>
                 </div>
               </div>
               <div class="flex-1">
@@ -165,8 +197,8 @@
 
             <div class="flex items-center gap-4 p-3 bg-base-200/30 rounded-lg activity-item">
               <div class="avatar placeholder">
-                <div class="bg-warning text-warning-content rounded-full w-10">
-                  <%= icon "exclamation-triangle", class: "w-5 h-5" %>
+                <div class="bg-warning text-warning-content rounded-full w-10 h-10 flex items-center justify-center shrink-0" style="display: flex; align-items: center; justify-content: center;">
+                  <%= icon "exclamation-triangle", class: "w-4 h-4 flex-shrink-0", style: "display: block;", width: "16px", height: "16px" %>
                 </div>
               </div>
               <div class="flex-1">
@@ -178,8 +210,8 @@
 
             <div class="flex items-center gap-4 p-3 bg-base-200/30 rounded-lg activity-item">
               <div class="avatar placeholder">
-                <div class="bg-info text-info-content rounded-full w-10">
-                  <%= icon "rocket-launch", class: "w-5 h-5" %>
+                <div class="bg-info text-info-content rounded-full w-10 h-10 flex items-center justify-center shrink-0" style="display: flex; align-items: center; justify-content: center;">
+                  <%= icon "rocket-launch", class: "w-4 h-4 flex-shrink-0", style: "display: block;", width: "16px", height: "16px" %>
                 </div>
               </div>
               <div class="flex-1">

@@ -6,7 +6,8 @@ module Organizations
     # The service doesn't strictly need the organization to fetch generic plans,
     # but it's passed for potential future use (e.g., custom plans per org).
     # This is the instance `call` method required by ApplicationService.
-    def call(organization:)
+    def call(payload)
+      organization = payload[:organization]
       # Ensure organization is present, though not strictly used in current plan fetching logic
       return Failure(type: :validation, message: "Organization must be provided.") unless organization
 
