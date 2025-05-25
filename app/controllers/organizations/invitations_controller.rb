@@ -2,6 +2,8 @@ class Organizations::InvitationsController < ApplicationController
   layout "devise" # Use the devise layout for invitation acceptance forms
 
   before_action :authenticate_user!, only: [ :create ] # Authenticate for creation
+  skip_before_action :authenticate_user!, only: [ :edit, :update ] # Skip authentication for accepting invitations
+  skip_before_action :check_user_onboarding_status, only: [ :edit, :update ] # Skip onboarding check
   after_action :verify_authorized, only: [ :create ]
 
   def create
@@ -14,34 +16,49 @@ class Organizations::InvitationsController < ApplicationController
   end
 
   def edit
-    @user = User.find_by_invitation_token(params[:token], false)
+    @user = User.find_by_invitation_token(params[:token], true) # true to check if token is valid
 
-    if @user && @user.invitation_token?
-      if @user.organization.enterprise_login_configured?
-        sign_in(@user)
-        redirect_to authenticated_root_path, notice: "Welcome! You have been logged in."
+    if @user.nil?
+      redirect_to unauthenticated_root_path, alert: "Invalid or expired invitation token."
+      return
+    end
+
+    # If organization has SSO configured, auto-accept the invitation
+    if @user.organization&.enterprise_login_configured?
+      if @user.accept_invitation_without_password!
+        # Redirect to SSO login
+        flash[:notice] = "Your invitation has been accepted. Please log in with your company SSO."
+        redirect_to new_user_session_path(email: @user.email)
       else
-        # Redirect to password setting form
-        render :edit
+        redirect_to unauthenticated_root_path, alert: "Failed to accept invitation. Please contact support."
       end
     else
-      redirect_to unauthenticated_root_path, alert: "Invalid or expired invitation token."
+      # Show password setting form for non-SSO organizations
+      @token = params[:token]
+      render :edit
     end
   end
 
   def update
-    @user = User.find_by_invitation_token(params[:user][:invitation_token])
+    @user = User.find_by_invitation_token(params[:user][:invitation_token], true)
 
-    if @user && @user.invitation_token?
-      if @user.accept_invitation_with_password(user_params)
-        sign_in(@user)
-        redirect_to authenticated_root_path, notice: "Welcome! Your password has been set."
-      else
-        # Handle validation errors on password setting
-        render :edit, status: :unprocessable_entity
-      end
-    else
+    if @user.nil?
       redirect_to unauthenticated_root_path, alert: "Invalid or expired invitation token."
+      return
+    end
+
+    # Only allow password setting for non-SSO organizations
+    if @user.organization&.enterprise_login_configured?
+      redirect_to new_user_session_path, alert: "Please use your company SSO to log in."
+      return
+    end
+
+    if @user.accept_invitation_with_password(user_params)
+      sign_in(@user)
+      redirect_to authenticated_root_path, notice: "Welcome! Your password has been set and you are now signed in."
+    else
+      @token = params[:user][:invitation_token]
+      render :edit, status: :unprocessable_entity
     end
   end
 

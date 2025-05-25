@@ -52,23 +52,45 @@
       <div class="divider my-6">Or continue with</div>
     <% end %>
 
-    <%= simple_form_for(resource, as: resource_name, url: session_path(resource_name), html: { class: "space-y-4" }) do |f| %>
+    <%= simple_form_for(resource, as: resource_name, url: session_path(resource_name), html: { class: "space-y-4", data: { controller: "enterprise-login" } }) do |f| %>
+      <div class="alert alert-error hidden" data-enterprise-login-target="errorMessage"></div>
+      
       <%= f.input :email,
                   required: true,
                   autofocus: true,
                   label: "Email address",
                   input_html: {
                     class: "input input-bordered w-full",
-                    autocomplete: "email"
+                    autocomplete: "email",
+                    data: {
+                      enterprise_login_target: "emailInput",
+                      action: "blur->enterprise-login#checkDomain"
+                    }
                   } %>
 
-      <%= f.input :password,
-                  required: true,
-                  label: "Password",
-                  input_html: {
-                    class: "input input-bordered w-full",
-                    autocomplete: "current-password"
-                  } %>
+      <div data-enterprise-login-target="ssoNotice" class="hidden">
+        <div class="alert alert-info">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <span>Your organization uses Single Sign-On. Click below to continue.</span>
+        </div>
+        <%= link_to "Continue with SSO", enterprise_oauth_initiate_path,
+                    method: :post,
+                    class: "btn btn-primary w-full mt-4",
+                    data: {
+                      enterprise_login_target: "ssoButton",
+                      turbo: false
+                    } %>
+      </div>
+
+      <div data-enterprise-login-target="passwordSection">
+        <%= f.input :password,
+                    required: true,
+                    label: "Password",
+                    input_html: {
+                      class: "input input-bordered w-full",
+                      autocomplete: "current-password"
+                    } %>
+      </div>
 
       <div class="flex items-center justify-between">
         <% if devise_mapping.rememberable? %>

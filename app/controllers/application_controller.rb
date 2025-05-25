@@ -41,7 +41,8 @@ class ApplicationController < ActionController::Base
   end
 
   def devise_or_onboarding_controller?
-    devise_controller? || controller_name == "onboarding"
+    devise_controller? || controller_name == "onboarding" ||
+    (controller_name == "invitations" && controller_path == "organizations/invitations")
   end
 
   def current_organization

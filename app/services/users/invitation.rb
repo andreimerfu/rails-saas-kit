@@ -50,7 +50,15 @@ module Users
       inviter = payload[:inviter]
       organization = payload[:organization]
 
-      invited_user = User.invite!({ email: email, organization_id: organization.id }, inviter)
+      # Extract name from email if not provided
+      name = payload[:name] || email.split("@").first.humanize
+
+      invited_user = User.invite!({
+        email: email,
+        organization_id: organization.id,
+        name: name,
+        role: :member # Default role for invited users
+      }, inviter)
 
       if invited_user.persisted? && invited_user.errors.empty?
         Success(payload.merge(invited_user: invited_user))

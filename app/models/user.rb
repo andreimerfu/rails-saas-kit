@@ -59,4 +59,18 @@ class User < ApplicationRecord
       # user.skip_confirmation!
     end
   end
+
+  # Custom method to accept invitation with password
+  def accept_invitation_with_password(params)
+    self.password = params[:password]
+    self.password_confirmation = params[:password_confirmation]
+    self.accept_invitation!
+  end
+
+  # Accept invitation without password (for SSO users)
+  def accept_invitation_without_password!
+    self.password = Devise.friendly_token[0, 20] if encrypted_password.blank?
+    self.skip_confirmation! if respond_to?(:skip_confirmation!)
+    self.accept_invitation!
+  end
 end

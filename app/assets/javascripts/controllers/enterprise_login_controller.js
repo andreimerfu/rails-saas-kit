@@ -1,10 +1,12 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = [ "emailInput", "submitButton", "errorMessage" ]
+  static targets = [ "emailInput", "submitButton", "errorMessage", "ssoNotice", "passwordSection", "ssoButton" ]
 
   connect() {
-    this.originalButtonText = this.submitButtonTarget.value
+    if (this.hasSubmitButtonTarget) {
+      this.originalButtonText = this.submitButtonTarget.value
+    }
   }
 
   checkDomain() {
@@ -16,28 +18,65 @@ export default class extends Controller {
         .then(response => response.json())
         .then(data => {
           if (data.configured) {
-            this.submitButtonTarget.value = `Login with ${data.idp_name}`
+            this.showSSOOption(data.idp_name, email)
             this.clearError()
           } else {
-            this.resetButton()
-            this.showError("Enterprise connection isn't configured for this email address.")
+            this.showPasswordOption()
+            this.clearError()
           }
         })
         .catch(error => {
           console.error("Error checking domain:", error)
-          this.resetButton()
-          this.showError("Could not verify email address. Please try again.")
+          this.showPasswordOption()
+          this.clearError()
         })
     } else {
-      this.resetButton()
+      this.showPasswordOption()
       // If email is not empty and contains "@" but domain is still invalid, show format error
       if (email.trim() !== "" && email.includes("@")) {
-        this.showError("Invalid email format. Please enter a valid corporate email.")
+        this.showError("Invalid email format. Please enter a valid email.")
       } else if (email.trim() === "") {
         // If email input is completely empty, clear any errors
         this.clearError()
       }
-      // If user is typing before the "@" or the field is empty, errors are cleared or not shown.
+    }
+  }
+
+  showSSOOption(idpName, email) {
+    // Hide password section and show SSO notice
+    if (this.hasPasswordSectionTarget) {
+      this.passwordSectionTarget.classList.add("hidden")
+    }
+    if (this.hasSsoNoticeTarget) {
+      this.ssoNoticeTarget.classList.remove("hidden")
+    }
+    
+    // Update SSO button to include email parameter
+    if (this.hasSsoButtonTarget) {
+      const baseUrl = this.ssoButtonTarget.getAttribute("href").split("?")[0]
+      this.ssoButtonTarget.setAttribute("href", `${baseUrl}?email=${encodeURIComponent(email)}`)
+    }
+    
+    // Update submit button text if it exists
+    if (this.hasSubmitButtonTarget) {
+      this.submitButtonTarget.value = `Login with ${idpName}`
+      this.submitButtonTarget.classList.add("hidden")
+    }
+  }
+
+  showPasswordOption() {
+    // Show password section and hide SSO notice
+    if (this.hasPasswordSectionTarget) {
+      this.passwordSectionTarget.classList.remove("hidden")
+    }
+    if (this.hasSsoNoticeTarget) {
+      this.ssoNoticeTarget.classList.add("hidden")
+    }
+    
+    // Reset submit button
+    if (this.hasSubmitButtonTarget) {
+      this.submitButtonTarget.value = this.originalButtonText
+      this.submitButtonTarget.classList.remove("hidden")
     }
   }
 
@@ -52,18 +91,24 @@ export default class extends Controller {
   }
 
   showError(message) {
-    this.errorMessageTarget.textContent = message
-    this.errorMessageTarget.classList.remove("hidden")
+    if (this.hasErrorMessageTarget) {
+      this.errorMessageTarget.textContent = message
+      this.errorMessageTarget.classList.remove("hidden")
+    }
     this.emailInputTarget.classList.add("input-error") // DaisyUI error class
   }
 
   clearError() {
-    this.errorMessageTarget.textContent = ""
-    this.errorMessageTarget.classList.add("hidden")
+    if (this.hasErrorMessageTarget) {
+      this.errorMessageTarget.textContent = ""
+      this.errorMessageTarget.classList.add("hidden")
+    }
     this.emailInputTarget.classList.remove("input-error")
   }
 
   resetButton() {
-    this.submitButtonTarget.value = this.originalButtonText
+    if (this.hasSubmitButtonTarget) {
+      this.submitButtonTarget.value = this.originalButtonText
+    }
   }
 }

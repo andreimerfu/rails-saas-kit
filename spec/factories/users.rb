@@ -29,8 +29,29 @@ FactoryBot.define do
     trait :invited do
       invitation_sent_at { Time.current }
       invitation_accepted_at { nil }
+      invitation_token { Devise.friendly_token }
       association :invited_by, factory: :user # Assumes invited_by is a user
       association :organization # Invited to this organization
+
+      # Store the raw token for testing
+      transient do
+        raw_invitation_token { nil }
+      end
+
+      after(:build) do |user, evaluator|
+        if evaluator.raw_invitation_token.nil?
+          raw_token = Devise.friendly_token
+          user.invitation_token = Devise.token_generator.digest(User, :invitation_token, raw_token)
+          user.instance_variable_set(:@raw_invitation_token, raw_token)
+        end
+      end
+
+      after(:create) do |user, evaluator|
+        # Make raw token accessible for tests
+        user.define_singleton_method(:raw_invitation_token) do
+          @raw_invitation_token
+        end
+      end
     end
 
     # If you have a `profile` association or similar, you can add it here:

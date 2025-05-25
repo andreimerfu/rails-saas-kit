@@ -30,6 +30,9 @@ class EnterpriseOauthController < ApplicationController
         hd: setting.hd,
         scopes: setting.scopes
       }
+      # Store the email in session for invitation acceptance flow
+      session[:enterprise_oauth_email] = email
+
       # Redirect to the dynamic OmniAuth path
       # The path helper `user_omniauth_authorize_path` expects the provider symbol.
       redirect_to user_omniauth_authorize_path(setting.provider.to_sym), allow_other_host: true

@@ -8,6 +8,12 @@ class Organization < ApplicationRecord
 
   has_many :users, dependent: :destroy
   has_many :pages, dependent: :destroy
+  has_one :enterprise_oauth_setting, foreign_key: :domain, primary_key: :domain
+
+  # Check if organization has enterprise SSO configured
+  def enterprise_login_configured?
+    enterprise_oauth_setting.present?
+  end
 
   # --- Helper methods to access data from `stripe_subscription_details` jsonb field ---
 
