@@ -202,6 +202,30 @@
   .sidebar-mobile {
     @apply w-80;
   }
+  
+  /* Force completely opaque sidebar on mobile - most aggressive approach */
+  .drawer:not(.lg\:drawer-open) .drawer-side {
+    background-color: rgba(0, 0, 0, 0.4) !important; /* Semi-transparent overlay */
+  }
+  
+  .drawer:not(.lg\:drawer-open) .drawer-side aside {
+    background: oklch(var(--b1)) !important;
+    backdrop-filter: none !important;
+  }
+  
+  .drawer:not(.lg\:drawer-open) .drawer-side aside * {
+    backdrop-filter: none !important;
+  }
+  
+  /* Override all semi-transparent backgrounds on mobile */
+  .drawer:not(.lg\:drawer-open) .drawer-side aside [class*="bg-base-100"] {
+    background: oklch(var(--b1)) !important;
+  }
+  
+  /* Remove gradients on mobile */
+  .drawer:not(.lg\:drawer-open) .drawer-side aside.sidebar-gradient {
+    background: oklch(var(--b1)) !important;
+  }
 }
 
 /* Dark Mode Optimizations */
@@ -266,6 +290,40 @@
 
 .pricing-card:hover {
   transform: translateY(-8px);
+}
+
+/* Mobile Sidebar Transparency Fix - High Priority */
+@media screen and (max-width: 1023px) {
+  /* Target the drawer when NOT in lg:drawer-open mode (mobile) */
+  .drawer:not(.drawer-open) .drawer-side,
+  .drawer .drawer-side {
+    z-index: 40 !important;
+  }
+  
+  .drawer:not(.drawer-open) .drawer-side aside,
+  .drawer .drawer-side aside {
+    background-color: #ffffff !important; /* Force white background */
+    background-image: none !important;
+  }
+  
+  /* Dark mode support */
+  [data-theme="dark"] .drawer:not(.drawer-open) .drawer-side aside,
+  [data-theme="dark"] .drawer .drawer-side aside,
+  html[data-theme="dark"] .drawer:not(.drawer-open) .drawer-side aside,
+  html[data-theme="dark"] .drawer .drawer-side aside {
+    background-color: #1f2937 !important; /* Force dark background */
+    background-image: none !important;
+  }
+  
+  /* Override any nested transparent backgrounds */
+  .drawer .drawer-side aside > * {
+    background-color: inherit !important;
+    backdrop-filter: none !important;
+  }
+  
+  .drawer .drawer-side aside [class*="bg-base-100"] {
+    background-color: inherit !important;
+  }
 }
 
 /* Pricing card popular badge animation */
