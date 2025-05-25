@@ -68,3 +68,171 @@
 }
 
 /* End of Tiny MCE Editor Override css */
+
+/* Custom SaaS Dashboard Styles */
+
+/* Sidebar Enhancements */
+.sidebar-gradient {
+  background: linear-gradient(135deg, hsl(var(--b1)) 0%, hsl(var(--b2)) 100%);
+}
+
+.nav-item-active {
+  @apply bg-primary text-primary-content shadow-lg scale-[1.02];
+  box-shadow: 0 4px 20px hsl(var(--p) / 0.3);
+}
+
+.nav-item-hover {
+  @apply hover:bg-base-300/50 hover:scale-[1.01] hover:translate-x-1;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dashboard Card Animations */
+.dashboard-card {
+  @apply transition-all duration-300 hover:shadow-2xl hover:-translate-y-1;
+}
+
+.stat-card-gradient {
+  background: linear-gradient(135deg, var(--gradient-from) 0%, var(--gradient-to) 100%);
+}
+
+/* Custom Gradients for Stats Cards */
+.stat-blue {
+  --gradient-from: #dbeafe;
+  --gradient-to: #c7d2fe;
+}
+
+.stat-green {
+  --gradient-from: #d1fae5;
+  --gradient-to: #a7f3d0;
+}
+
+.stat-purple {
+  --gradient-from: #e9d5ff;
+  --gradient-to: #ddd6fe;
+}
+
+.stat-amber {
+  --gradient-from: #fef3c7;
+  --gradient-to: #fed7aa;
+}
+
+/* Activity Item Animations */
+.activity-item {
+  @apply transition-all duration-200 hover:bg-base-200/50 hover:scale-[1.01];
+}
+
+/* Custom Scrollbar for Sidebar */
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--p) / 0.3) transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: hsl(var(--p) / 0.3);
+  border-radius: 2px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--p) / 0.5);
+}
+
+/* Notification Badge Animation */
+.notification-badge {
+  @apply animate-pulse;
+}
+
+/* Team Status Indicators */
+.status-online {
+  @apply bg-success;
+  box-shadow: 0 0 0 2px hsl(var(--su) / 0.3);
+}
+
+.status-away {
+  @apply bg-warning;
+  box-shadow: 0 0 0 2px hsl(var(--wa) / 0.3);
+}
+
+.status-offline {
+  @apply bg-error;
+  box-shadow: 0 0 0 2px hsl(var(--er) / 0.3);
+}
+
+/* Quick Action Buttons */
+.quick-action-btn {
+  @apply transition-all duration-200 hover:scale-105 hover:shadow-lg;
+}
+
+/* Avatar Enhancements */
+.avatar-enhanced {
+  @apply relative;
+}
+
+.avatar-enhanced::after {
+  content: '';
+  @apply absolute -top-1 -right-1 w-3 h-3 bg-success rounded-full border-2 border-base-100;
+}
+
+/* Custom Alert Styles */
+.alert-modern {
+  @apply border-l-4 bg-gradient-to-r;
+}
+
+.alert-info-modern {
+  @apply border-info from-info/10 to-info/5;
+}
+
+.alert-success-modern {
+  @apply border-success from-success/10 to-success/5;
+}
+
+.alert-warning-modern {
+  @apply border-warning from-warning/10 to-warning/5;
+}
+
+/* Responsive Enhancements */
+@media (max-width: 1024px) {
+  .sidebar-mobile {
+    @apply w-80;
+  }
+}
+
+/* Dark Mode Optimizations */
+@media (prefers-color-scheme: dark) {
+  .stat-blue {
+    --gradient-from: #1e3a8a;
+    --gradient-to: #3730a3;
+  }
+  
+  .stat-green {
+    --gradient-from: #166534;
+    --gradient-to: #15803d;
+  }
+  
+  .stat-purple {
+    --gradient-from: #581c87;
+    --gradient-to: #6b21a8;
+  }
+  
+  .stat-amber {
+    --gradient-from: #92400e;
+    --gradient-to: #b45309;
+  }
+}
+
+/* Loading States */
+.loading-skeleton {
+  @apply animate-pulse bg-base-300 rounded;
+}
+
+/* Chart Placeholder Styling */
+.chart-placeholder {
+  @apply bg-gradient-to-br from-base-200/30 to-base-300/30 border-2 border-dashed border-base-300 rounded-xl;
+}
