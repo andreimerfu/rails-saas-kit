@@ -252,3 +252,49 @@
   transform: translate(-50%, -50%) !important;
   display: block !important;
 }
+
+/* Pricing Page Enhancements */
+.bg-grid-pattern {
+  background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0);
+  background-size: 20px 20px;
+}
+
+/* Pricing card hover effects */
+.pricing-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pricing-card:hover {
+  transform: translateY(-8px);
+}
+
+/* Pricing card popular badge animation */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(87, 13, 248, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(87, 13, 248, 0.5);
+  }
+}
+
+.popular-badge {
+  animation: pulse-glow 2s infinite;
+}
+
+/* FAQ accordion enhancements */
+.collapse:not(.collapse-close) > .collapse-content,
+.collapse.collapse-open > .collapse-content {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 200px;
+  }
+}

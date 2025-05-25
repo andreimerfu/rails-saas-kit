@@ -15,6 +15,10 @@ module Organizations
       return plan_configurations_result if plan_configurations_result.failure?
 
       formatted_plans = format_plans(plan_configurations_result.value!)
+
+      # Add enterprise plan manually (not a Stripe subscription)
+      formatted_plans << enterprise_plan
+
       Success(formatted_plans)
     rescue StandardError => e
       Rails.logger.error "Organizations::PricingPlanFetcher: Error fetching plans - #{e.message}"
@@ -44,7 +48,7 @@ module Organizations
 
         is_contact_us_plan = plan_metadata[:contact_us] == "true" || plan_amount.nil?
 
-        next if !is_contact_us_plan && actual_stripe_plan_id.blank?
+        next if actual_stripe_plan_id.blank?
 
         {
           id: original_symbol_candidate,
@@ -61,6 +65,32 @@ module Organizations
           checkout_button_label: plan_metadata[:checkout_button_label] || "Choose #{plan_name.titleize}"
         }
       end.compact
+    end
+
+    def enterprise_plan
+      {
+        id: :enterprise,
+        stripe_plan_id: "enterprise_custom",
+        name: "Enterprise",
+        description: "Custom solutions for large organizations",
+        price_id: nil,
+        amount: nil,
+        currency: "usd",
+        interval: "month",
+        features: [
+          "Unlimited team members",
+          "Unlimited storage",
+          "Enterprise analytics",
+          "24/7 phone support",
+          "Custom integrations",
+          "Advanced security",
+          "Dedicated success manager",
+          "SLA guarantee"
+        ],
+        popular: false,
+        contact_us: true,
+        checkout_button_label: "Contact Sales"
+      }
     end
   end
 end

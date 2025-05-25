@@ -1,83 +1,112 @@
-<div class="container mx-auto px-4 py-8">
-  <h1 class="text-3xl font-bold mb-6 text-center">Pricing Plans for <%= @organization.name %></h1>
-  <p class="text-center text-lg mb-2">
-    Current Plan:
-    <span class="badge badge-lg <%= @organization.plan.present? ? 'badge-success' : 'badge-ghost' %>">
-      <%= @organization.current_stripe_plan_id.presence&.titleize || "Not Subscribed" %>
-    </span>
-  </p>
-  <%# Removed Stripe Customer ID display %>
-  <%# if @organization.stripe_customer_id.present? %>
-  <%#   <p class="text-center text-sm text-base-content/70 mb-10"> %>
-  <%#     Stripe Customer ID: <%= @organization.stripe_customer_id %>
-  <%#   </p> %>
-  <%# <% end %>
-
-  <% if @plans.blank? && flash[:alert].blank? %>
-    <div class="text-center p-6 bg-base-200 rounded-box">
-      <p class="text-xl">No pricing plans are currently available.</p>
-      <p class="text-base-content/70">Please check back later or contact support.</p>
+<div class="space-y-8">
+  <!-- Header Section -->
+  <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <div>
+      <div class="breadcrumbs text-sm">
+        <ul>
+          <li><%= icon "home-modern", class: "w-4 h-4" %></li>
+          <li>Organization</li>
+          <li class="font-semibold">Pricing Plans</li>
+        </ul>
+      </div>
+      <h1 class="text-3xl font-bold text-base-content mt-2">Choose Your Perfect Plan</h1>
+      <p class="text-base-content/60 mt-1">Scale your business with the right tools. Upgrade or downgrade at any time.</p>
     </div>
-  <% elsif @plans.present? %>
-    <div class="grid grid-cols-1 md:grid-cols-<%= @plans.size == 2 ? '2' : '3' %> gap-6">
-      <% @plans.each do |plan_data| %>
-        <%
-          # The `plan_data` is now a hash we constructed in the controller.
-          # It contains :id (local symbol like :starter), :stripe_plan_id, :name, :amount etc.
-          # The stripe-rails helpers usually expect the local plan symbol or the Stripe::Plan object.
-          # Let's assume we can pass the local symbol `plan_data[:id]` to the helper.
-          # Or, if Stripe::Plans.all was directly passed as @plans, it would be plan.id (symbol)
+    <div class="flex items-center gap-3">
+      <span class="text-sm font-medium text-base-content/70">Current Plan:</span>
+      <div class="badge badge-lg <%= @organization.plan.present? ? 'badge-success' : 'badge-ghost' %> gap-2">
+        <%= icon "check-circle", class: "w-4 h-4" if @organization.plan.present? %>
+        <%= @organization.current_stripe_plan_id.presence&.titleize || "Free Trial" %>
+      </div>
+    </div>
+  </div>
 
-          card_classes = ["border-2"]
-          card_classes << (plan_data[:popular] ? "border-primary shadow-xl" : "border-base-300")
+  <!-- Pricing Plans Section -->
+  <div class="mt-8">
+    <% if @plans.blank? && flash[:alert].blank? %>
+      <!-- Empty State -->
+      <div class="text-center py-16">
+        <div class="max-w-md mx-auto">
+          <%= icon "exclamation-triangle", class: "w-16 h-16 text-base-content/20 mx-auto mb-4" %>
+          <h3 class="text-xl font-semibold text-base-content mb-2">No Plans Available</h3>
+          <p class="text-base-content/60 mb-6">Pricing plans are currently unavailable. Please check back later or contact our support team.</p>
+          <button class="btn btn-primary">Contact Support</button>
+        </div>
+      </div>
+    <% elsif @plans.present? %>
+      <!-- Plans Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+        <% @plans.each_with_index do |plan_data, index| %>
+          <%
+            is_active_subscription = @organization.active_subscription?
+            is_current_plan = is_active_subscription && @organization.current_stripe_plan_id == plan_data[:stripe_plan_id]
+            is_popular = plan_data[:popular]
+            is_enterprise = plan_data[:contact_us]
+          %>
           
-          # Update current plan check to use active_subscription? and current_stripe_plan_id
-          is_active_subscription = @organization.active_subscription?
-          is_current_plan = is_active_subscription && @organization.current_stripe_plan_id == plan_data[:stripe_plan_id]
-        %>
-        <%= render UI::CardComponent.new(title: plan_data[:name], class: card_classes.join(" ")) do |card| %>
-          <% card.with_body do %>
-            <div class="flex flex-col h-full">
-              <% if plan_data[:popular] %>
-                <div class="badge badge-primary badge-outline absolute top-4 right-4">Most Popular</div>
-              <% end %>
-
-              <% if plan_data[:amount].nil? && plan_data[:contact_us] %>
-                <p class="text-4xl font-bold mb-2">Custom</p>
-              <% else %>
-                <p class="text-4xl font-bold mb-2">
-                  <%= number_to_currency(plan_data[:amount].to_f / 100, unit: plan_data[:currency].upcase, precision: (plan_data[:amount] % 100 == 0 ? 0 : 2)) %>
-                  <span class="text-xl font-normal">/<%= plan_data[:interval] %></span>
-                </p>
-              <% end %>
-
-              <p class="text-base-content/70 mb-4 flex-grow"><%= plan_data[:description] %></p>
-              <ul class="list-disc list-inside mb-6 space-y-1 text-sm flex-grow">
-                <% plan_data[:features]&.each do |feature| %>
-                  <li><%= feature %></li>
-                <% end %>
-              </ul>
-              <div class="card-actions justify-center mt-auto">
-                <% if is_current_plan %>
-                  <button class="btn btn-primary btn-disabled w-full">Current Plan</button>
-                <% elsif plan_data[:contact_us] %>
-                  <%# Link to a contact page or mailto for Enterprise plans %>
-                  <%= link_to plan_data[:checkout_button_label] || "Contact Us", "#contact-enterprise", class: "btn btn-accent w-full" %>
-                <% else %>
-                  <%# Use stripe-rails helper. The exact helper and options might vary. %>
-                  <%# Link to our new controller action that creates a Stripe Checkout session %>
-                  <%= link_to plan_data[:checkout_button_label] || "Choose Plan",
-                                new_subscription_checkout_session_path(plan_id: plan_data[:stripe_plan_id]),
-                                class: "btn btn-primary w-full",
-                                "data-turbo": "false" # Important for Stripe redirect
-                                %>
-                <% end %>
+          <!-- Plan Card -->
+          <div class="relative">
+            <!-- Popular Badge -->
+            <% if is_popular %>
+              <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+                <div class="badge badge-primary">Most Popular</div>
+              </div>
+            <% end %>
+            
+            <!-- Card -->
+            <div class="card bg-base-100 border-2 <%= is_popular ? 'border-primary shadow-lg' : is_current_plan ? 'border-success' : 'border-base-300' %> h-full">
+              <div class="card-body p-6">
+                <h3 class="text-xl font-bold text-center mb-2"><%= plan_data[:name] %></h3>
+                <p class="text-base-content/60 text-center text-sm mb-4"><%= plan_data[:description] %></p>
+                
+                <!-- Price -->
+                <div class="text-center mb-6">
+                  <% if plan_data[:amount].nil? && plan_data[:contact_us] %>
+                    <div class="text-3xl font-bold text-base-content">Custom</div>
+                    <div class="text-base-content/60 text-sm">Contact us for pricing</div>
+                  <% else %>
+                    <div class="text-4xl font-bold text-base-content">
+                      <%= number_to_currency(plan_data[:amount].to_f / 100, unit: "$", precision: (plan_data[:amount] % 100 == 0 ? 0 : 2)) %>
+                    </div>
+                    <div class="text-base-content/60">per <%= plan_data[:interval] %></div>
+                  <% end %>
+                </div>
+                
+                <!-- Features List -->
+                <ul class="space-y-2 mb-6 flex-grow">
+                  <% if plan_data[:features].present? %>
+                    <% plan_data[:features].each do |feature| %>
+                      <li class="flex items-start gap-2 text-sm">
+                        <%= icon "check", class: "w-4 h-4 text-success flex-shrink-0 mt-0.5" %>
+                        <span><%= feature %></span>
+                      </li>
+                    <% end %>
+                  <% end %>
+                </ul>
+                
+                <!-- CTA Button -->
+                <div class="card-actions justify-center">
+                  <% if is_current_plan %>
+                    <button class="btn btn-success w-full" disabled>
+                      <%= icon "check-circle", class: "w-4 h-4" %>
+                      Current Plan
+                    </button>
+                  <% elsif plan_data[:contact_us] %>
+                    <%= link_to "#contact-enterprise", class: "btn btn-accent w-full" do %>
+                      Contact Sales
+                    <% end %>
+                  <% else %>
+                    <%= link_to plan_data[:checkout_button_label] || "Get Started",
+                                  new_subscription_checkout_session_path(plan_id: plan_data[:stripe_plan_id]),
+                                  class: "btn btn-primary w-full",
+                                  "data-turbo": "false" %>
+                  <% end %>
+                </div>
               </div>
             </div>
-          <% end %>
+          </div>
         <% end %>
-      <% end %>
-    </div>
-  <% end %>
-  <%# Flash messages for checkout success/cancel will be handled by the controller's render of this page %>
+      </div>
+    <% end %>
+  </div>
 </div>
