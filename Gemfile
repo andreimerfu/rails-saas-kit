@@ -90,7 +90,7 @@ gem "dry-initializer-rails" # Includes dry-types and dry-initializer
 gem "dry-types", "~> 1.7"
 gem "dry-monads" # For Railway-oriented programming
 gem "dry-transaction"  # For business transaction management
-gem "dry-workflow", git: "git@github.com:andreimerfu/dry-workflow.git"
+gem "dry-workflow"
 gem "rails_charts"
 gem "wicked" # For step-by-step wizard flows
 
