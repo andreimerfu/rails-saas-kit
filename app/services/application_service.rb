@@ -5,7 +5,7 @@ module ApplicationService
   included do
     include Dry::Workflow
     include Dry::Monads[:result, :do]
-    # include ServiceLogging # If you have a ServiceLogging concern, include it here
+    include ServiceLogging
 
     # Add class method to handle blocks
     def self.call(*args, **kwargs, &block)

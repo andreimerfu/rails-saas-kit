@@ -33,12 +33,12 @@ module Loggable
     # Merge with provided payload
     payload = context.merge(payload)
 
-    # Log with the instance logger - SemanticLogger expects a hash or a string, not both
+    # Log with the instance logger
     if message.nil?
       logger.send(level, payload)
     else
-      # If we have both message and payload, format them together
-      logger.send(level, { message: message }.merge(payload))
+      # If we have both message and payload, pass message as first argument and payload as named parameters
+      logger.send(level, message, payload)
     end
   end
 
@@ -95,20 +95,17 @@ module Loggable
   # @param payload [Hash] Additional context to include
   # @return [Exception] The exception that was logged
   def log_exception(exception, level = :error, message = nil, **payload)
-    exception_data = {
-      class: exception.class.name,
-      message: exception.message,
-      backtrace: exception.backtrace&.first(10)
+    # Use SemanticLogger's built-in exception handling
+    log_message = message || "Exception occurred: #{exception.class.name}"
+
+    # Merge additional payload
+    exception_payload = {
+      exception_class: exception.class.name,
+      **payload
     }
 
-    # Create a payload with message and exception data
-    log_payload = {
-      message: message || exception.message,
-      exception: exception_data
-    }.merge(payload)
-
-    # Log with the appropriate level
-    logger.send(level, log_payload)
+    # Log with exception as the second parameter for proper SemanticLogger handling
+    logger.send(level, log_message, exception_payload.merge(exception: exception))
 
     exception
   end

@@ -10,57 +10,53 @@ SemanticLogger.default_level = Rails.configuration.log_level || :info
 # Configure appenders based on environment
 if Rails.env.development? || Rails.env.test?
   # Development/Test: Colorful console output with emojis
-  SemanticLogger.add_appender(
-    io: STDOUT,
-    formatter: :color,
-    level: :debug
-  )
-
-  # Add emoji prefixes to log levels for development
-  module SemanticLogger
-    module Formatters
-      class Color < Default
-        # Override color format to add emojis
-        def level_to_color
-          color = case level
-          when :trace
-                    BOLD + BLUE
-          when :debug
-                    GREEN
-          when :info
-                    BOLD + CYAN
-          when :warn
-                    BOLD + YELLOW
-          when :error
-                    BOLD + RED
-          when :fatal
-                    BOLD + WHITE + ON_RED
-          else
-                    BOLD + RED
-          end
-
-          emoji = case level
-          when :trace
-                    "🔍 "
-          when :debug
-                    "🐞 "
-          when :info
-                    "ℹ️  "
-          when :warn
-                    "⚠️  "
-          when :error
-                    "❌ "
-          when :fatal
-                    "💀 "
-          else
-                    "❓ "
-          end
-
-          "#{color}#{emoji}#{level}#{CLEAR}"
-        end
+  # Create a custom formatter class to add emojis
+  class EmojiColorFormatter < SemanticLogger::Formatters::Color
+    # Override level_color method to add emojis
+    def level_color
+      color = case level
+      when :trace
+                BOLD + BLUE
+      when :debug
+                GREEN
+      when :info
+                BOLD + CYAN
+      when :warn
+                BOLD + YELLOW
+      when :error
+                BOLD + RED
+      when :fatal
+                BOLD + WHITE + ON_RED
+      else
+                BOLD + RED
       end
+
+      emoji = case level
+      when :trace
+                "🔍 "
+      when :debug
+                "🐞 "
+      when :info
+                "ℹ️  "
+      when :warn
+                "⚠️  "
+      when :error
+                "❌ "
+      when :fatal
+                "💀 "
+      else
+                "❓ "
+      end
+
+      "#{color}#{emoji}#{level}#{CLEAR}"
     end
   end
+
+  SemanticLogger.add_appender(
+    io: STDOUT,
+    formatter: EmojiColorFormatter.new,
+    level: :debug
+  )
 
   # Enable amazing_print for better object inspection in development
   require "amazing_print"

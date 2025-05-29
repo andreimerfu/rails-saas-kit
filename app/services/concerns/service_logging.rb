@@ -30,8 +30,8 @@ module ServiceLogging
       # Log the service call
       instance.log_info("Starting service", {
         service: name,
-        args: args.map(&:to_s),
-        kwargs: kwargs.transform_values(&:to_s)
+        args: args.map { |arg| arg.respond_to?(:to_s) ? arg.to_s : arg.inspect },
+        kwargs: kwargs.transform_values { |value| value.respond_to?(:to_s) ? value.to_s : value.inspect }
       })
 
       # Start timing
@@ -50,15 +50,15 @@ module ServiceLogging
           service: name,
           duration_ms: duration,
           result_type: :success,
-          result_value: result.value!.to_s
+          result_value: result.value!.respond_to?(:to_s) ? result.value!.to_s : result.value!.inspect
         })
       else
         instance.log_warn("Service completed with failure", {
           service: name,
           duration_ms: duration,
           result_type: :failure,
-          failure_reason: result.failure.is_a?(Hash) ? result.failure[:type] : result.failure.to_s,
-          failure_details: result.failure.to_s
+          failure_reason: result.failure.is_a?(Hash) ? result.failure[:type] : (result.failure.respond_to?(:to_s) ? result.failure.to_s : result.failure.inspect),
+          failure_details: result.failure.respond_to?(:to_s) ? result.failure.to_s : result.failure.inspect
         })
       end
 
@@ -78,8 +78,8 @@ module ServiceLogging
     # Log step start
     log_debug("Starting step #{step_name}", {
       step: step_name,
-      args: args.map(&:to_s),
-      kwargs: kwargs.transform_values(&:to_s)
+      args: args.map { |arg| arg.respond_to?(:to_s) ? arg.to_s : arg.inspect },
+      kwargs: kwargs.transform_values { |value| value.respond_to?(:to_s) ? value.to_s : value.inspect }
     })
 
     # Start timing
@@ -104,8 +104,8 @@ module ServiceLogging
         step: step_name,
         duration_ms: duration,
         result_type: :failure,
-        failure_reason: result.failure.is_a?(Hash) ? result.failure[:type] : result.failure.to_s,
-        failure_details: result.failure.to_s
+        failure_reason: result.failure.is_a?(Hash) ? result.failure[:type] : (result.failure.respond_to?(:to_s) ? result.failure.to_s : result.failure.inspect),
+        failure_details: result.failure.respond_to?(:to_s) ? result.failure.to_s : result.failure.inspect
       })
     end
 
