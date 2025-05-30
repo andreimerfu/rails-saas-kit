@@ -10,7 +10,7 @@ module Rails
 
     # Render the manifest.json file
     def manifest
-      render template: "pwa/manifest.json", formats: [ :json ], layout: false
+      render template: "pwa/manifest", formats: [ :json ], layout: false
     end
 
     # Render the service-worker.js file

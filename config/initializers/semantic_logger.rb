@@ -55,7 +55,7 @@ if Rails.env.development? || Rails.env.test?
   SemanticLogger.add_appender(
     io: STDOUT,
     formatter: EmojiColorFormatter.new,
-    level: :debug
+    level: Rails.env.test? ? :warn : :debug
   )
 
   # Enable amazing_print for better object inspection in development
@@ -139,8 +139,10 @@ end
 # Replace Rails logger
 Rails.logger = SemanticLogger[Rails]
 
-# Replace Active Record logger
-ActiveRecord::Base.logger = SemanticLogger[ActiveRecord]
+# Replace Active Record logger (but respect test environment settings)
+unless Rails.env.test? && Rails.configuration.active_record.logger.nil?
+  ActiveRecord::Base.logger = SemanticLogger[ActiveRecord]
+end
 
 # Replace Action Controller logger
 ActionController::Base.logger = SemanticLogger[ActionController]

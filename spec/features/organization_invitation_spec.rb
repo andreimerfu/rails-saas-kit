@@ -6,7 +6,8 @@ RSpec.feature "Organization Invitations", type: :feature do
   let(:new_user_email) { "newuser@example.com" }
 
   before do
-    sign_in owner
+    # For feature specs, we need to manually sign in via the UI or use a more direct approach
+    login_as(owner, scope: :user)
   end
 
   describe "Inviting a new member" do
@@ -47,15 +48,15 @@ RSpec.feature "Organization Invitations", type: :feature do
       let!(:invited_user) { create(:user, :invited, email: new_user_email, organization: organization) }
 
       scenario "User can accept invitation and set password" do
-        sign_out owner
+        logout
 
         visit accept_invitation_path(token: invited_user.raw_invitation_token)
 
         expect(page).to have_content("Set Your Password")
         expect(page).to have_content("You've been invited to join #{organization.name}")
 
-        fill_in "Password", with: "SecurePassword123!"
-        fill_in "Password confirmation", with: "SecurePassword123!"
+        fill_in "user_password", with: "SecurePassword123!"
+        fill_in "user_password_confirmation", with: "SecurePassword123!"
         click_button "Set Password and Join"
 
         expect(page).to have_content("Welcome! Your password has been set and you are now signed in")
@@ -68,11 +69,11 @@ RSpec.feature "Organization Invitations", type: :feature do
       end
 
       scenario "Invalid invitation token shows error" do
-        sign_out owner
+        logout(:user)
 
         visit accept_invitation_path(token: "invalid_token")
 
-        expect(page).to have_content("Invalid or expired invitation token")
+        expect(page).to have_content("Invalid or expired invitation token.")
         expect(current_path).to eq(unauthenticated_root_path)
       end
     end
@@ -84,11 +85,11 @@ RSpec.feature "Organization Invitations", type: :feature do
       let!(:invited_sso_user) { create(:user, :invited, email: "user@sso-company.com", organization: sso_organization) }
 
       scenario "User is redirected to SSO login" do
-        sign_out owner
+        logout(:user)
 
         visit accept_invitation_path(token: invited_sso_user.raw_invitation_token)
 
-        expect(page).to have_content("Your invitation has been accepted. Please log in with your company SSO")
+        expect(page).to have_content("Your invitation has been accepted. Please log in with your company SSO.")
         expect(current_path).to eq(new_user_session_path)
 
         # Verify invitation was accepted
@@ -102,11 +103,13 @@ RSpec.feature "Organization Invitations", type: :feature do
     let!(:sso_setting) { create(:enterprise_oauth_setting, domain: "enterprise.com", provider: "microsoft_entra_id") }
 
     scenario "Entering SSO email shows SSO option", js: true do
-      sign_out owner
+      logout(:user)
       visit new_user_session_path
 
       fill_in "Email address", with: "user@enterprise.com"
-      find("#user_email").native.send_keys(:tab) # Trigger blur event
+      # Use a different approach to trigger the blur event
+      page.execute_script("document.getElementById('user_email').blur()")
+      sleep 0.5 # Give JavaScript time to execute
 
       expect(page).to have_content("Your organization uses Single Sign-On")
       expect(page).to have_link("Continue with SSO")
@@ -114,11 +117,13 @@ RSpec.feature "Organization Invitations", type: :feature do
     end
 
     scenario "Entering non-SSO email shows password field", js: true do
-      sign_out owner
+      logout(:user)
       visit new_user_session_path
 
       fill_in "Email address", with: "user@regular.com"
-      find("#user_email").native.send_keys(:tab) # Trigger blur event
+      # Use a different approach to trigger the blur event
+      page.execute_script("document.getElementById('user_email').blur()")
+      sleep 0.5 # Give JavaScript time to execute
 
       expect(page).not_to have_content("Your organization uses Single Sign-On")
       expect(page).to have_field("Password", visible: true)

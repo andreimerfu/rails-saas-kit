@@ -30,6 +30,7 @@ class Organizations::InvitationsController < ApplicationController
         flash[:notice] = "Your invitation has been accepted. Please log in with your company SSO."
         redirect_to new_user_session_path(email: @user.email)
       else
+        Rails.logger.error "Failed to accept invitation for user #{@user.email}: #{@user.errors.full_messages.join(', ')}"
         redirect_to unauthenticated_root_path, alert: "Failed to accept invitation. Please contact support."
       end
     else

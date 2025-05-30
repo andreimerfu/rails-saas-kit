@@ -69,7 +69,9 @@ class User < ApplicationRecord
 
   # Accept invitation without password (for SSO users)
   def accept_invitation_without_password!
-    self.password = Devise.friendly_token[0, 20] if encrypted_password.blank?
+    # Always set a random password for SSO users
+    self.password = Devise.friendly_token[0, 20]
+    self.password_confirmation = self.password
     self.skip_confirmation! if respond_to?(:skip_confirmation!)
     self.accept_invitation!
   end
