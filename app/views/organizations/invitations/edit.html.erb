@@ -1,0 +1,54 @@
+<div class="min-h-screen flex items-center justify-center">
+  <div class="card w-96 bg-base-100 shadow-xl">
+    <div class="card-body">
+      <h2 class="card-title text-2xl font-bold text-center mb-6">Set Your Password</h2>
+      
+      <p class="text-sm text-base-content/70 mb-6">
+        You've been invited to join <strong><%= @user.organization.name %></strong>. 
+        Please set your password to complete your registration.
+      </p>
+
+      <%= simple_form_for(@user, url: invitation_path, method: :put, html: { class: "space-y-4" }) do |f| %>
+        <%= f.error_notification %>
+        <%= f.hidden_field :invitation_token, value: @token %>
+
+        <div class="form-control">
+          <%= f.input :password, 
+                      required: true, 
+                      autofocus: true,
+                      input_html: { 
+                        class: "input input-bordered w-full", 
+                        autocomplete: "new-password",
+                        placeholder: "Enter your password"
+                      },
+                      label_html: { class: "label" },
+                      wrapper_html: { class: "mb-4" } %>
+        </div>
+
+        <div class="form-control">
+          <%= f.input :password_confirmation,
+                      required: true,
+                      input_html: { 
+                        class: "input input-bordered w-full", 
+                        autocomplete: "new-password",
+                        placeholder: "Confirm your password"
+                      },
+                      label_html: { class: "label" },
+                      wrapper_html: { class: "mb-6" } %>
+        </div>
+
+        <div class="form-actions">
+          <%= f.button :submit, "Set Password and Join", 
+                       class: "btn btn-primary w-full",
+                       data: { turbo: false } %>
+        </div>
+      <% end %>
+
+      <div class="divider">OR</div>
+
+      <div class="text-center">
+        <%= link_to "Back to Sign In", new_user_session_path, class: "link link-primary text-sm" %>
+      </div>
+    </div>
+  </div>
+</div>

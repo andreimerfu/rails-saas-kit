@@ -1,0 +1,47 @@
+<%# app/views/layouts/_flash_messages.html.erb %>
+<div class="fixed bottom-5 right-5 z-50 w-full max-w-xs space-y-3"> <%# Changed top-5 to bottom-5 %>
+  <% flash.each do |type, message| %>
+    <%
+      alert_class = case type.to_s
+                    when 'notice' then 'alert-success'
+                    when 'alert'  then 'alert-error'
+                    when 'warning' then 'alert-warning'
+                    else 'alert-info' # Default for other types like 'info'
+                    end
+    %>
+    <%# Added transition classes and initial state for open animation %>
+    <div role="alert" class="alert <%= alert_class %> shadow-lg relative overflow-hidden opacity-0 translate-x-full transition-all duration-300 ease-out"
+         data-controller="dismissable"
+         data-dismissable-auto-dismiss-value="true"
+         data-dismissable-delay-value="10000"
+         data-action="mouseenter->dismissable#pause mouseleave->dismissable#resume">
+
+      <!-- Icon (Grid Child 1) -->
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+        <% if type.to_s == 'notice' %>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        <% elsif type.to_s == 'alert' %>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <% elsif type.to_s == 'warning' %>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        <% end %>
+      </svg>
+
+      <!-- Message (Grid Child 2) -->
+      <span class="text-sm"><%= message %></span>
+
+      <!-- Button (Grid Child 3) -->
+      <%# Using btn-ghost to make background transparent, text color will be inherited (stroke-current on SVG) or explicitly set if needed %>
+      <button class="btn btn-xs btn-square btn-ghost" data-action="click->dismissable#dismiss">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4"> <%# stroke="currentColor" will use parent text color %>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <!-- Progress bar container - positioned at the bottom of the alert -->
+      <div class="absolute bottom-0 left-0 right-0 h-1.5 bg-gray-200 dark:bg-gray-700" data-dismissable-target="progressBarContainer"> <%# Light opaque track %>
+        <div class="h-full <%= alert_class.gsub('alert-', 'bg-') %>" data-dismissable-target="progressBar"></div>
+      </div>
+    </div>
+  <% end %>
+</div>

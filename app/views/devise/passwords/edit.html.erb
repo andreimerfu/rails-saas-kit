@@ -1,0 +1,42 @@
+<% content_for :title, "Change Password" %>
+
+<%= render UI::CardComponent.new(title: "Change your password", class: "max-w-md mx-auto") do |card| %>
+  <% card.with_body do %>
+    <p class="text-center text-base-content/70 mb-6">Please enter your new password below.</p> <%# Moved subtitle here %>
+
+    <%= simple_form_for(resource, as: resource_name, url: password_path(resource_name), html: { method: :put, class: "space-y-4" }) do |f| %>
+      <%= f.error_notification %>
+      <%= render "devise/shared/error_messages", resource: resource %>
+
+      <%= f.input :reset_password_token, as: :hidden %>
+      <%= f.full_error :reset_password_token %>
+
+      <%= f.input :password,
+                  label: "New password",
+                  required: true,
+                  autofocus: true,
+                  hint: ("#{@minimum_password_length} characters minimum" if @minimum_password_length),
+                  input_html: {
+                    class: "input input-bordered w-full",
+                    autocomplete: "new-password"
+                  } %>
+
+      <%= f.input :password_confirmation,
+                  label: "Confirm new password",
+                  required: true,
+                  input_html: {
+                    class: "input input-bordered w-full",
+                    autocomplete: "new-password"
+                  } %>
+
+      <%= f.button :submit, "Change My Password", class: "btn btn-primary w-full" %>
+    <% end %>
+
+    <div class="text-center mt-6">
+      <p class="text-sm text-base-content/70">
+        Remember your password?
+        <%= link_to "Sign in", new_session_path(resource_name), class: "link link-hover link-primary font-medium" %>
+      </p>
+    </div>
+  <% end %> <%# card.with_body %>
+<% end %>

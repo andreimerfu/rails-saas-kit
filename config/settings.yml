@@ -1,0 +1,10 @@
+smtp:
+  username: <%= ENV['SMTP_USERNAME'] %>
+  password: <%= ENV['SMTP_PASSWORD'] %>
+  address: <%= ENV['SMTP_ADDRESS'] %>
+  port: <%= ENV['SMTP_PORT'] %>
+
+stripe:
+  secret_key: <%= ENV['STRIPE_SECRET_KEY'] %>
+  publishable_key: <%= ENV['STRIPE_PUBLISHABLE_KEY'] %>
+  signing_secret: <%= ENV['STRIPE_SIGNING_SECRET'] %>

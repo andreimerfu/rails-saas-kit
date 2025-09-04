@@ -1,0 +1,15 @@
+<div class="max-w-lg mx-auto">
+  <h1 class="text-2xl font-bold mb-4">Notifications</h1>
+
+  <%= turbo_stream_from current_user, :notifications %>
+
+  <div id="notifications_list" class="divide-y divide-base-300 border border-base-300 rounded-box">
+    <%= render "notifications/list_items", notifications: @notifications %>
+  </div>
+
+  <% if @notifications.any? && @notifications.unread.any? %>
+    <div class="mt-4 text-center">
+      <%= button_to "Mark all as read", mark_all_as_read_notifications_path, method: :patch, class: "btn btn-ghost" %>
+    </div>
+  <% end %>
+</div>

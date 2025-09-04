@@ -1,0 +1,6 @@
+<%# Locals: notifications (ActiveRecord::Relation of Noticed::Notification) %>
+<% if notifications.any? %>
+  <%= render partial: "notification", collection: notifications, as: :notification %>
+<% else %>
+  <p class="p-4 text-center text-opacity-70">You have no new notifications.</p>
+<% end %>

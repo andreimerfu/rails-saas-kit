@@ -1,0 +1,50 @@
+<div class="min-h-screen flex items-center justify-center bg-base-200">
+  <div class="max-w-md w-full mx-4">
+    <div class="card bg-base-100 shadow-xl">
+      <div class="card-body text-center">
+        <!-- Welcome Icon -->
+        <div class="flex justify-center mb-6">
+          <div class="p-4 bg-primary/10 rounded-full">
+            <%= icon "rocket-launch", class: "w-12 h-12 text-primary" %>
+          </div>
+        </div>
+        
+        <!-- Welcome Message -->
+        <h1 class="text-3xl font-bold text-base-content mb-2">
+          Welcome, <%= current_user.name.split.first %>! 👋
+        </h1>
+        
+        <p class="text-base-content/60 mb-6">
+          You're successfully logged into your account.
+          <% if @organization %>
+            You're part of <strong><%= @organization.name %></strong>.
+          <% end %>
+        </p>
+        
+        <!-- Quick Actions -->
+        <div class="space-y-3">
+          <% if @organization %>
+            <%= link_to manage_organization_path, class: "btn btn-primary w-full gap-2" do %>
+              <%= icon "cog-6-tooth", class: "w-5 h-5" %>
+              Manage Organization
+            <% end %>
+          <% end %>
+          
+          <%= link_to notifications_path, class: "btn btn-outline w-full gap-2" do %>
+            <%= icon "bell", class: "w-5 h-5" %>
+            View Notifications
+          <% end %>
+        </div>
+        
+        <!-- User Info -->
+        <div class="divider"></div>
+        <div class="text-sm text-base-content/60">
+          <p>Logged in as: <strong><%= current_user.email %></strong></p>
+          <% if @organization %>
+            <p>Organization: <strong><%= @organization.name %></strong></p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

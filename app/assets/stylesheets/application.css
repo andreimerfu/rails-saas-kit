@@ -1,0 +1,358 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@plugin "@tailwindcss/aspect-ratio";
+@plugin "tailwindcss-displaymodes";
+@plugin 'tailwind-scrollbar';
+@plugin "daisyui" {
+  themes: all;
+}
+
+/* Scrollbar css */
+
+.scrollbar-rounded {
+  @apply scrollbar-thin scrollbar-thumb-primary hover:scrollbar-thumb-primary active:scrollbar-thumb-primary scrollbar-track-base-200
+}
+
+/* Start Tiny MCE Editor Override css */
+
+.tox {
+  color: var(--color-base-content) !important;
+}
+
+.tox-tinymce {
+  border: var(--border) solid #0000 !important;
+  border-color: color-mix(in oklab, var(--color-base-content) 20%, #0000) !important;
+}
+
+.tox .tox-edit-area__iframe,
+.tox:not(.tox-tinymce-inline) .tox-editor-header,
+.tox .tox-toolbar__primary,
+.tox .tox-toolbar-overlord {
+  background-color: var(--color-base-100)  !important;
+  color: var(--color-base-content) !important;
+}
+
+.tox .tox-menubar {
+  background: repeating-linear-gradient(transparent 0 1px, transparent 1px 39px) center top 39px / 100% calc(100% - 39px) no-repeat;
+  background-color: var(--color-base-100)  !important;
+}
+
+.tox :not(svg):not(rect) {
+  color: var(--color-base-content) !important;
+}
+
+.tox .tox-statusbar {
+  background-color: var(--color-base-100) !important;
+  border-top: 1px solid var(--color-base-100) !important;
+}
+
+.tox-promotion {
+  display: none !important;
+}
+
+.tox .tox-mbtn, .tox-tbtn {
+  background-color: var(--color-base-200) !important;
+  color: var(--color-base-content) !important;
+}
+
+.tox-tbtn svg {
+  fill: var(--color-base-content) !important;
+}
+
+.tox .tox-editor-header {
+  border-bottom: 1px solid var(--color-base-200) !important;
+}
+
+.tox .tox-tbtn:hover {
+  background-color: var(--color-base-300) !important;
+}
+
+/* End of Tiny MCE Editor Override css */
+
+/* Custom SaaS Dashboard Styles */
+
+/* Sidebar Enhancements */
+.sidebar-gradient {
+  background: linear-gradient(135deg, hsl(var(--b1)) 0%, hsl(var(--b2)) 100%);
+}
+
+.nav-item-active {
+  @apply bg-primary text-primary-content shadow-lg scale-[1.02];
+  box-shadow: 0 4px 20px hsl(var(--p) / 0.3);
+}
+
+.nav-item-hover {
+  @apply hover:bg-base-300/50 hover:scale-[1.01] hover:translate-x-1;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dashboard Card Animations */
+.dashboard-card {
+  @apply transition-all duration-300 hover:shadow-2xl hover:-translate-y-1;
+}
+
+.stat-card-gradient {
+  background: linear-gradient(135deg, var(--gradient-from) 0%, var(--gradient-to) 100%);
+}
+
+/* Custom Gradients for Stats Cards */
+.stat-blue {
+  --gradient-from: #dbeafe;
+  --gradient-to: #c7d2fe;
+}
+
+.stat-green {
+  --gradient-from: #d1fae5;
+  --gradient-to: #a7f3d0;
+}
+
+.stat-purple {
+  --gradient-from: #e9d5ff;
+  --gradient-to: #ddd6fe;
+}
+
+.stat-amber {
+  --gradient-from: #fef3c7;
+  --gradient-to: #fed7aa;
+}
+
+/* Activity Item Animations */
+.activity-item {
+  @apply transition-all duration-200 hover:bg-base-200/50 hover:scale-[1.01];
+}
+
+/* Custom Scrollbar for Sidebar */
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--p) / 0.3) transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: hsl(var(--p) / 0.3);
+  border-radius: 2px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--p) / 0.5);
+}
+
+/* Notification Badge Animation */
+.notification-badge {
+  @apply animate-pulse;
+}
+
+/* Team Status Indicators */
+.status-online {
+  @apply bg-success;
+  box-shadow: 0 0 0 2px hsl(var(--su) / 0.3);
+}
+
+.status-away {
+  @apply bg-warning;
+  box-shadow: 0 0 0 2px hsl(var(--wa) / 0.3);
+}
+
+.status-offline {
+  @apply bg-error;
+  box-shadow: 0 0 0 2px hsl(var(--er) / 0.3);
+}
+
+/* Quick Action Buttons */
+.quick-action-btn {
+  @apply transition-all duration-200 hover:scale-105 hover:shadow-lg;
+}
+
+/* Avatar Enhancements */
+.avatar-enhanced {
+  @apply relative;
+}
+
+.avatar-enhanced::after {
+  content: '';
+  @apply absolute -top-1 -right-1 w-3 h-3 bg-success rounded-full border-2 border-base-100;
+}
+
+/* Custom Alert Styles */
+.alert-modern {
+  @apply border-l-4 bg-gradient-to-r;
+}
+
+.alert-info-modern {
+  @apply border-info from-info/10 to-info/5;
+}
+
+.alert-success-modern {
+  @apply border-success from-success/10 to-success/5;
+}
+
+.alert-warning-modern {
+  @apply border-warning from-warning/10 to-warning/5;
+}
+
+/* Responsive Enhancements */
+@media (max-width: 1024px) {
+  .sidebar-mobile {
+    @apply w-80;
+  }
+  
+  /* Force completely opaque sidebar on mobile - most aggressive approach */
+  .drawer:not(.lg\:drawer-open) .drawer-side {
+    background-color: rgba(0, 0, 0, 0.4) !important; /* Semi-transparent overlay */
+  }
+  
+  .drawer:not(.lg\:drawer-open) .drawer-side aside {
+    background: oklch(var(--b1)) !important;
+    backdrop-filter: none !important;
+  }
+  
+  .drawer:not(.lg\:drawer-open) .drawer-side aside * {
+    backdrop-filter: none !important;
+  }
+  
+  /* Override all semi-transparent backgrounds on mobile */
+  .drawer:not(.lg\:drawer-open) .drawer-side aside [class*="bg-base-100"] {
+    background: oklch(var(--b1)) !important;
+  }
+  
+  /* Remove gradients on mobile */
+  .drawer:not(.lg\:drawer-open) .drawer-side aside.sidebar-gradient {
+    background: oklch(var(--b1)) !important;
+  }
+}
+
+/* Dark Mode Optimizations */
+@media (prefers-color-scheme: dark) {
+  .stat-blue {
+    --gradient-from: #1e3a8a;
+    --gradient-to: #3730a3;
+  }
+  
+  .stat-green {
+    --gradient-from: #166534;
+    --gradient-to: #15803d;
+  }
+  
+  .stat-purple {
+    --gradient-from: #581c87;
+    --gradient-to: #6b21a8;
+  }
+  
+  .stat-amber {
+    --gradient-from: #92400e;
+    --gradient-to: #b45309;
+  }
+}
+
+/* Loading States */
+.loading-skeleton {
+  @apply animate-pulse bg-base-300 rounded;
+}
+
+/* Chart Placeholder Styling */
+.chart-placeholder {
+  @apply bg-gradient-to-br from-base-200/30 to-base-300/30 border-2 border-dashed border-base-300 rounded-xl;
+}
+
+/* Activity item icons - ensure perfect centering */
+.activity-item .avatar .rounded-full {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+}
+
+.activity-item .avatar .rounded-full svg {
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  display: block !important;
+}
+
+/* Pricing Page Enhancements */
+.bg-grid-pattern {
+  background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0);
+  background-size: 20px 20px;
+}
+
+/* Pricing card hover effects */
+.pricing-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pricing-card:hover {
+  transform: translateY(-8px);
+}
+
+/* Mobile Sidebar Transparency Fix - High Priority */
+@media screen and (max-width: 1023px) {
+  /* Target the drawer when NOT in lg:drawer-open mode (mobile) */
+  .drawer:not(.drawer-open) .drawer-side,
+  .drawer .drawer-side {
+    z-index: 40 !important;
+  }
+  
+  .drawer:not(.drawer-open) .drawer-side aside,
+  .drawer .drawer-side aside {
+    background-color: #ffffff !important; /* Force white background */
+    background-image: none !important;
+  }
+  
+  /* Dark mode support */
+  [data-theme="dark"] .drawer:not(.drawer-open) .drawer-side aside,
+  [data-theme="dark"] .drawer .drawer-side aside,
+  html[data-theme="dark"] .drawer:not(.drawer-open) .drawer-side aside,
+  html[data-theme="dark"] .drawer .drawer-side aside {
+    background-color: #1f2937 !important; /* Force dark background */
+    background-image: none !important;
+  }
+  
+  /* Override any nested transparent backgrounds */
+  .drawer .drawer-side aside > * {
+    background-color: inherit !important;
+    backdrop-filter: none !important;
+  }
+  
+  .drawer .drawer-side aside [class*="bg-base-100"] {
+    background-color: inherit !important;
+  }
+}
+
+/* Pricing card popular badge animation */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(87, 13, 248, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(87, 13, 248, 0.5);
+  }
+}
+
+.popular-badge {
+  animation: pulse-glow 2s infinite;
+}
+
+/* FAQ accordion enhancements */
+.collapse:not(.collapse-close) > .collapse-content,
+.collapse.collapse-open > .collapse-content {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 200px;
+  }
+}

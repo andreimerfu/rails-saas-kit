@@ -1,0 +1,34 @@
+<% content_for :title, "Reset Password" %>
+
+<%= render UI::CardComponent.new(title: "Forgot your password?", class: "max-w-md mx-auto") do |card| %>
+  <% card.with_body do %>
+    <p class="text-center text-base-content/70 mb-6">Enter your email address and we'll send you instructions to reset your password.</p> <%# Moved subtitle here %>
+
+    <%= simple_form_for(resource, as: resource_name, url: password_path(resource_name), html: { method: :post, class: "space-y-4" }) do |f| %>
+      <%= f.error_notification %>
+      <%= render "devise/shared/error_messages", resource: resource %>
+
+      <%= f.input :email,
+                  required: true,
+                  autofocus: true,
+                  label: "Email address",
+                  input_html: {
+                    class: "input input-bordered w-full",
+                    autocomplete: "email"
+                  } %>
+
+      <%= f.button :submit, "Send Reset Instructions", class: "btn btn-primary w-full" %>
+    <% end %>
+
+    <div class="text-center mt-6 space-y-2">
+      <p class="text-sm text-base-content/70">
+        Remember your password?
+        <%= link_to "Sign in", new_session_path(resource_name), class: "link link-hover link-primary font-medium" %>
+      </p>
+      <p class="text-sm text-base-content/70">
+        Didn't receive confirmation instructions?
+        <%= link_to "Resend confirmation", new_confirmation_path(resource_name), class: "link link-hover link-primary font-medium" %>
+      </p>
+    </div>
+  <% end %> <%# card.with_body %>
+<% end %>

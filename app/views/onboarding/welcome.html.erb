@@ -1,0 +1,27 @@
+<%= render 'stepper' %>
+
+<div class="max-w-2xl mx-auto mt-8">
+  <%= render UI::CardComponent.new(title: "Welcome to Your New Workspace!", class: "shadow-xl") do |card| %>
+    <% card.with_body do %>
+      <div class="text-center"> <%# Added wrapper for centering %>
+        <div class="prose mx-auto mb-6">
+        <p class="text-base-content/80">
+          Let's get started by setting up your organization. This will be your team's dedicated space
+          for collaboration and project management.
+        </p>
+        <p class="text-base-content/80">
+          Click "Continue" to proceed to the next step.
+        </p>
+      </div>
+
+      <%= link_to next_wizard_path, class: "btn btn-primary btn-wide" do %>
+        Continue
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 ml-1">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+        </svg>
+      <% end %>
+      </div>
+    <% end %>
+    <%# Removed empty actions slot %>
+  <% end %>
+</div>
